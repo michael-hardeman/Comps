@@ -1,5 +1,5 @@
-name = "binary_map_tests"
-description = "Tests the binary_map project"
+name = "csv"
+description = "Helpers for interacting with CSV files/string"
 version = "0.1.0-dev"
 
 authors = ["Jean-Pierre Rosen"]
@@ -7,12 +7,4 @@ maintainers = ["Jean-Pierre Rosen <rosen@adalog.fr>"]
 maintainers-logins = ["jprosen"]
 licenses = "GPL-2.0-or-later"
 website = "https://adalog.fr/en/components.html"
-tags = []
-
-executables = ["binary_map_tests"]
-
-[[depends-on]]
-binary_map = "*"
-
-[[pins]]
-binary_map = { path='..' }
+tags = ["csv", "parsing", "tables"]

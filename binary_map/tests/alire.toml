@@ -1,0 +1,18 @@
+name = "binary_map_tests"
+description = "Tests the binary_map project"
+version = "0.1.0-dev"
+
+authors = ["Michael Hardeman"]
+maintainers = ["Michael Hardeman <mhardeman25@gmail.com>"]
+maintainers-logins = ["michael-hardeman"]
+licenses = "GPL-2.0-or-later"
+website = "https://adalog.fr/en/components.html"
+tags = []
+
+executables = ["binary_map_tests"]
+
+[[depends-on]]
+binary_map = "*"
+
+[[pins]]
+binary_map = { path='..' }

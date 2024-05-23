@@ -1,0 +1,10 @@
+name = "file_iterator"
+description = "A generic package for executing an action on every line of a file"
+version = "0.1.0-dev"
+
+authors = ["Jean-Pierre Rosen"]
+maintainers = ["Jean-Pierre Rosen <rosen@adalog.fr>"]
+maintainers-logins = ["jprosen"]
+licenses = "GPL-2.0-or-later"
+website = "https://adalog.fr/en/components.html"
+tags = ["files", "iterators", "generic"]

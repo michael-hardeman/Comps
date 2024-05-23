@@ -1,5 +1,5 @@
 ----------------------------------------------------------------------
---  Generic_File_Iterator - Generic procedure body                  --
+--  Generic_File_Iterator - Generic procedure specification         --
 --  Copyright (C) 2018, 2021 Adalog                                 --
 --  Author: J-P. Rosen                                              --
 --                                                                  --
@@ -32,45 +32,8 @@
 --  Public License.                                                 --
 ----------------------------------------------------------------------
 
-with
-   Ada.Text_IO;
-
-procedure Generic_File_Iterator (Name : String) is
-   use Ada.Text_IO;
-
-   Units_File : File_Type;
-
-   function Read_Line return String is
-      Buffer : String (1 .. 250);
-      Last   : Natural;
-   begin
-      Get_Line (Units_File, Buffer, Last);
-      if Last = Buffer'Last then
-         return Buffer & Read_Line;
-      else
-         return Buffer (1 .. Last);
-      end if;
-   end Read_Line;
-
-begin  -- Generic_File_Iterator
-   Open (Units_File, In_File, Name);
-
-   -- Exit on End_Error
-   -- This is the simplest way to deal with improperly formed files
-   loop
-      Action (Read_Line);
-   end loop;
-
-   -- Never comes here
-
-exception
-   when End_Error =>
-      -- normal exit
-      Close (Units_File);
-   when others =>
-      if Is_Open (Units_File) then
-         Close (Units_File);
-      end if;
-      raise;
-end Generic_File_Iterator;
-
+--  Active iterator
+--  Executes Action on every line of given file
+generic
+   with procedure Action (Line : String);
+procedure Generic_File_Iterator (Name : String);

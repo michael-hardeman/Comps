@@ -1,7 +1,7 @@
 with Options_Analyzer;
 with Ada.Exceptions; use Ada.Exceptions;
 with Text_Io; use Text_IO;
-procedure Toptions is
+procedure Options_Analyzer_Tests is
    package Options is new Options_Analyzer (Binary_Options => "abc",
                                             Valued_Options => "xyz",
                                             Tail_Separator => "--");
@@ -39,4 +39,4 @@ exception
    when Occur : Options_Error =>
       Set_Col (1);
       Put_Line ("Error: " & Exception_Message (Occur));
-end Toptions;
+end Options_Analyzer_Tests;

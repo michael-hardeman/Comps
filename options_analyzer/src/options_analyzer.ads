@@ -39,17 +39,17 @@ generic
 package Options_Analyzer is
    pragma Elaborate_Body;
 
-   -- Check if an option has been given on the command line.
-   -- Option can be a Binary_Option, a Valued_Option, or ' ' for Tail
+   --  Check if an option has been given on the command line.
+   --  Option can be a Binary_Option, a Valued_Option, or ' ' for Tail
    function Is_Present (Option : Character) return Boolean;
    Tail : constant Character := ' ';
 
-   -- Get the value of a Valued_Option
-   -- Returns Default if the option was not given, or if there is no
-   --   value and Explicit_Required is false. If Explicit_Required
-   --   is true, and the option was given without value, Options_Error
-   --   is raised.
-   -- Whether the option was actually given can be tested with Is_Present
+   --  Get the value of a Valued_Option
+   --  Returns Default if the option was not given, or if there is no
+   --    value and Explicit_Required is false. If Explicit_Required
+   --    is true, and the option was given without value, Options_Error
+   --    is raised.
+   --  Whether the option was actually given can be tested with Is_Present
    function Value (Option            : Character;
                    Default           : String    := "";
                    Explicit_Required : Boolean   := False) return String;
@@ -58,24 +58,24 @@ package Options_Analyzer is
                    Default           : Integer   := 0;
                    Explicit_Required : Boolean   := False) return Integer;
 
-   -- Returns everything that follows the Tail_Separator if any,
-   -- or Default otherwise
+   --  Returns everything that follows the Tail_Separator if any,
+   --  or Default otherwise
    function Tail_Value (Default : String := "") return String;
 
-   -- Number of parameters that are not options, nor values associated with
-   -- Valued_Options
+   --  Number of parameters that are not options, nor values associated with
+   --  Valued_Options
    function Parameter_Count return Natural;
 
-   -- Returns the value of Number'th parameter
+   --  Returns the value of Number'th parameter
    function Parameter (Number : Positive) return String;
 
-   -- Returns the raw option string
-   -- If with_command is True, include the command name
+   --  Returns the raw option string
+   --  If with_command is True, include the command name
    function Option_String (With_Command : Boolean := False) return String;
 
-   -- Exception raised by analyze when the command line
-   -- is invalid.
-   -- Note that an invalid use of any of the provided facilities
-   -- will raise Program_Error.
+   --  Exception raised by analyze when the command line
+   --  is invalid.
+   --  Note that an invalid use of any of the provided facilities
+   --  will raise Program_Error.
    Options_Error : exception;
 end Options_Analyzer;

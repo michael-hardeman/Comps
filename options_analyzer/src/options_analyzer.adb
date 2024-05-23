@@ -38,24 +38,28 @@ with -- Predefined Ada units
 package body Options_Analyzer is
    use Ada.Command_Line, Ada.Exceptions;
 
-   -- User errors are dected when the command line is parsed, i.e. when the
-   -- body of this package is elaborated.
-   -- If we raised Options_Error at that point, the application program would have
-   -- a hard time catching the exception (since the elaboration is in a declarative part).
-   -- Therefore, we catch the exception in the body, and save the occurrence in the
-   -- following variable. Each provided subprogram (except Option_String) does a Reraise_Occurrence
-   -- on it; this way, the original error is triggered at the first call of any subprogram.
-   -- Reminder: Null_Occurrence is the default for Exception_Occurrence, and
-   -- Reraise_Occurrence (Null_Occurrence) does nothing.
+   --  User errors are dected when the command line is parsed, i.e. when the
+   --  body of this package is elaborated.
+   --  If we raised Options_Error at that point, the application program would
+   --  have a hard time catching the exception (since the elaboration is in a
+   --  declarative part). Therefore, we catch the exception in the body, and
+   --  save the occurrence in the following variable. Each provided subprogram
+   --  (except Option_String) does a Reraise_Occurrence on it; this way, the
+   --  original error is triggered at the first call of any subprogram.
+   --  Reminder: Null_Occurrence is the default for Exception_Occurrence, and
+   --  Reraise_Occurrence (Null_Occurrence) does nothing.
 
    Analyze_Error : Exception_Occurrence;
 
-   Presence_Table : array (Integer range Binary_Options'Range) of Boolean := (others => False);
+   Presence_Table :
+      array (Integer range Binary_Options'Range)
+      of Boolean := (others => False);
 
    subtype Value_Index is Integer range -1 .. Integer'Last;
    Absent   : constant Value_Index := -1;
    No_Value : constant Value_Index := 0;
-   Value_Table : array (Valued_Options'Range) of Value_Index := (others => Absent);
+   Value_Table :
+      array (Valued_Options'Range) of Value_Index := (others => Absent);
 
    Count : Natural := 0;
    Parameter_Table : array (1 .. Argument_Count) of Positive;
@@ -70,7 +74,7 @@ package body Options_Analyzer is
       use Ada.Strings.Fixed;
 
       Inx : Natural;
-      Option_Str : constant String (1..1) := (1 => Option);
+      Option_Str : constant String (1 .. 1) := (1 => Option);
    begin
       Reraise_Occurrence (Analyze_Error);
 
@@ -84,7 +88,7 @@ package body Options_Analyzer is
          return Value_Table (Inx) /= Absent;
       end if;
 
-      -- Not a valid option character
+      --  Not a valid option character
       raise Program_Error;
    end Is_Present;
 
@@ -105,7 +109,7 @@ package body Options_Analyzer is
       end Partial_String;
 
       Opts : constant String := Partial_String (1);
-   begin  -- Option_String
+   begin  --  Option_String
       if not With_Command then
          return Opts;
       end if;
@@ -157,7 +161,7 @@ package body Options_Analyzer is
          end if;
       end Parameter_Tail;
 
-   begin  -- Tail_Value
+   begin  --  Tail_Value
       Reraise_Occurrence (Analyze_Error);
 
       if Tail_Start in Absent | No_Value then
@@ -188,13 +192,13 @@ package body Options_Analyzer is
    is
       use Ada.Strings.Fixed;
 
-      Option_Str : constant String (1..1) := (1 => Option);
+      Option_Str : constant String (1 .. 1) := (1 => Option);
       Inx        : Value_Index := Index (Valued_Options, Option_Str);
    begin
       Reraise_Occurrence (Analyze_Error);
 
       if Inx = 0 then
-         -- Not a valid option character
+         --  Not a valid option character
          raise Program_Error;
       end if;
 
@@ -216,7 +220,9 @@ package body Options_Analyzer is
                    Default           : Integer   := 0;
                    Explicit_Required : Boolean   := False) return Integer
    is
-      String_Result : constant String := Value (Option, Integer'Image (Default), Explicit_Required);
+      String_Result : constant String := Value (Option,
+                                                Integer'Image (Default),
+                                                Explicit_Required);
    begin
       return Integer'Value (String_Result);
    exception
@@ -227,16 +233,15 @@ package body Options_Analyzer is
    Inx : Positive := 1;
 
    use Ada.Strings.Fixed;
-begin -- Options_Analyzer
-Analyze_Loop:
-   while Inx <= Argument_Count loop
+begin --  Options_Analyzer
+   Analyze_Loop : while Inx <= Argument_Count loop
       declare
          The_Arg : constant String := Argument (Inx);
          Opt_Inx : Natural;
       begin
          if The_Arg = Tail_Separator then
             if Inx = Argument_Count then
-               -- Nothing after separator
+               --  Nothing after separator
                Tail_Start := No_Value;
             else
                Tail_Start := Inx + 1;
@@ -245,45 +250,51 @@ Analyze_Loop:
          end if;
 
          if The_Arg = "" then
-            -- Ignore zero-length parameters that can be set by tools
+            --  Ignore zero-length parameters that can be set by tools
             null;
          elsif The_Arg (1) = '-' and The_Arg'Length /= 1 then
-            -- '-' alone is considered a parameter
+            --  '-' alone is considered a parameter
 
             for Arg_Inx in Positive range 2 .. The_Arg'Last loop
-               Opt_Inx := Index (Binary_Options, The_Arg (Arg_Inx..Arg_Inx));
+               Opt_Inx := Index (Binary_Options, The_Arg (Arg_Inx .. Arg_Inx));
                if Opt_Inx = 0 then
-                  Opt_Inx := Index (Valued_Options, The_Arg (Arg_Inx..Arg_Inx));
+                  Opt_Inx := Index (Valued_Options,
+                                    The_Arg (Arg_Inx .. Arg_Inx));
                   if Opt_Inx = 0 then
-                     -- Unknown option
+                     --  Unknown option
                      User_Error ("Unknown option: " & The_Arg (Arg_Inx));
                   else
-                     -- A valued option
+                     --  A valued option
                      if Arg_Inx /= The_Arg'Last then
-                        User_Error ("Valued option must appear last: " & The_Arg (Arg_Inx));
+                        User_Error ("Valued option must appear last: " &
+                                    The_Arg (Arg_Inx));
                      end if;
                      if Inx = Argument_Count then
                         Value_Table (Opt_Inx) := No_Value;
-                     elsif Argument (Inx+1) = Tail_Separator then
+                     elsif Argument (Inx + 1) = Tail_Separator then
                         Value_Table (Opt_Inx) := No_Value;
-                     elsif Argument (Inx+1)'Length = 0 then
-                        -- Protection if we are launched by a tool that can set zero-length parameters
+                     elsif Argument (Inx + 1)'Length = 0 then
+                        --  Protection if we are launched by a tool that can
+                        --  set zero-length parameters
                         Value_Table (Opt_Inx) := No_Value;
-                     elsif Argument (Inx+1)(1) = '-' and Argument (Inx+1)'Length /=1 then
-                       -- '-' alone is a value here
+                     elsif
+                        Argument (Inx + 1)(1) = '-' and
+                        Argument (Inx + 1)'Length /= 1
+                     then
+                        --  '-' alone is a value here
                         Value_Table (Opt_Inx) := No_Value;
                      else
-                        Value_Table (Opt_Inx) := Inx+1;
-                        Inx := Inx+1;
+                        Value_Table (Opt_Inx) := Inx + 1;
+                        Inx := Inx + 1;
                      end if;
                   end if;
                else
-                  -- A binary option
+                  --  A binary option
                   Presence_Table (Opt_Inx) := True;
                end if;
             end loop;
          else
-            -- A parameter
+            --  A parameter
             Count := Count + 1;
             Parameter_Table (Count) := Inx;
          end if;
@@ -294,4 +305,3 @@ exception
    when Occur : Options_Error =>
       Save_Occurrence (Analyze_Error, Occur);
 end Options_Analyzer;
-

@@ -1,0 +1,18 @@
+name = "options_analyzer_tests"
+description = "Tests the options_analyzer component"
+version = "0.1.0-dev"
+
+authors = ["Jean-Pierre Rosen"]
+maintainers = ["Jean-Pierre Rosen <rosen@adalog.fr>"]
+maintainers-logins = ["jprosen"]
+licenses = "GPL-2.0-or-later"
+website = "https://adalog.fr/en/components.html"
+tags = ["tests"]
+
+executables = ["options_analyzer_tests"]
+
+[[depends-on]]
+options_analyzer = "*"
+
+[[pins]]
+options_analyzer = { path='..' }

@@ -113,8 +113,10 @@ package body Protection is
       The_Semaphore    : Semaphore_Access;
       Raised_Exception : access Exception_Occurrence) is
    new Ada.Finalization.Limited_Controlled with null record;
+   overriding
    procedure Finalize (Item : in out Anti_Abort_Object);
 
+   overriding
    procedure Finalize (Item : in out Anti_Abort_Object) is
    begin
       if Item.The_Semaphore /= null then
@@ -147,17 +149,17 @@ package body Protection is
       declare
          Do_The_Job : Anti_Abort_Object (Subprogram,
                                          Lock,
-                                         Raised_Exception'access);
+                                         Raised_Exception'Access);
          pragma Unreferenced (Do_The_Job);
       begin
          null;
-         -- Everything is done by the finalization of Do_The_Job
-         -- Since a finalization is an abort deferred operation,
-         -- this ensures that a task cannot be aborted between
-         -- "P" and "V".
+         --  Everything is done by the finalization of Do_The_Job
+         --  Since a finalization is an abort deferred operation,
+         --  this ensures that a task cannot be aborted between
+         --  "P" and "V".
       end;
       Reraise_Occurrence (Raised_Exception);
-      -- No effect if Null_Occurrence
+      --  No effect if Null_Occurrence
    end Protected_Call;
 
    package body Generic_Protected_Call is
@@ -171,18 +173,19 @@ package body Protection is
       begin
          Save_Occurrence (Raised_Exception, Null_Occurrence);
          declare
-            Do_The_Job : Anti_Abort_Object(Subprogram,
-               Copy'access,
-               Lock,
-               Raised_Exception'access);
+            Do_The_Job : Anti_Abort_Object (Subprogram,
+                                            Copy'Access,
+                                            Lock,
+                                            Raised_Exception'Access);
             pragma Unreferenced (Do_The_Job);
          begin
-            null;      -- See comment in the non generic case
+            null; --  See comment in the non generic case
          end;
          Reraise_Occurrence (Raised_Exception);
-         -- No effect if Null_Occurrence
+         --  No effect if Null_Occurrence
       end Protected_Call;
 
+      overriding
       procedure Finalize (Item : in out Anti_Abort_Object) is
       begin
          if Item.The_Semaphore /= null then
@@ -214,18 +217,19 @@ package body Protection is
       begin
          Save_Occurrence (Raised_Exception, Null_Occurrence);
          declare
-            Do_The_Job : Anti_Abort_Object(Subprogram,
-               Parameter,
-               Lock,
-               Raised_Exception'access);
+            Do_The_Job : Anti_Abort_Object (Subprogram,
+                                            Parameter,
+                                            Lock,
+                                            Raised_Exception'Access);
             pragma Unreferenced (Do_The_Job);
          begin
             null;      -- See comment in the non generic case
          end;
          Reraise_Occurrence (Raised_Exception);
-         -- No effect if Null_Occurrence
+         --  No effect if Null_Occurrence
       end Protected_Call;
 
+      overriding
       procedure Finalize (Item : in out Anti_Abort_Object) is
       begin
          if Item.The_Semaphore /= null then

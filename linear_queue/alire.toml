@@ -1,0 +1,10 @@
+name = "linear_queue"
+description = "A queue implemented using a linked list"
+version = "0.1.0-dev"
+
+authors = ["Jean-Pierre Rosen"]
+maintainers = ["Jean-Pierre Rosen <rosen@adalog.fr>"]
+maintainers-logins = ["jprosen"]
+licenses = "GPL-2.0-or-later"
+website = "https://adalog.fr/en/components.html"
+tags = ["queue", "linked-list", "data-structure"]

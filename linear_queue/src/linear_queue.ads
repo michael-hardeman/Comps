@@ -33,44 +33,46 @@
 ----------------------------------------------------------------------
 
 with  -- Ada
-  Ada.Finalization;  --## rule line off WITH_CLAUSES ## no message about private with (95 compatible)
+  Ada.Finalization; --## rule line off WITH_CLAUSES
+  --  ## no message about private with (95 compatible)
 
 generic
    type Component (<>) is private;
 package Linear_Queue is
 
-   -- Type Queue has value semantics and automatic memory management
+   --  Type Queue has value semantics and automatic memory management
    type Queue is private;
    Empty_Queue : constant Queue;
 
-   procedure Append  (To        : in out Queue; Element   : in Component);
-   procedure Append  (To        : in out Queue; Container : in Queue);
-   procedure Prepend (To        : in out Queue; Element   : in Component);
-   procedure Clear   (Container : in out Queue; Nb_Elems  : in Natural := Natural'Last);
-   -- Removes the first Nb_Elems elements from the Queue.
-   -- Any cursor pointing into the removed elements must be reinitialized (no tampering checks!)
-   function  Is_Empty (Container : in Queue) return Boolean;
-
+   procedure Append  (To        : in out Queue; Element   : Component);
+   procedure Append  (To        : in out Queue; Container : Queue);
+   procedure Prepend (To        : in out Queue; Element   : Component);
+   procedure Clear   (Container : in out Queue;
+                      Nb_Elems  : Natural := Natural'Last);
+   --  Removes the first Nb_Elems elements from the Queue.
+   --  Any cursor pointing into the removed elements must be reinitialized
+   --  (no tampering checks!)
+   function  Is_Empty (Container : Queue) return Boolean;
 
    --
-   -- Iterator
+   --  Iterator
    --
 
    type Cursor is private;
 
-   function  First       (Container : in Queue)  return Cursor;
-   function  Last        (Container : in Queue)  return Cursor;
-   function  Next        (Position  : in Cursor) return Cursor;
-   function  Has_Element (Position  : in Cursor) return Boolean;
+   function  First       (Container : Queue)  return Cursor;
+   function  Last        (Container : Queue)  return Cursor;
+   function  Next        (Position  : Cursor) return Cursor;
+   function  Has_Element (Position  : Cursor) return Boolean;
 
-   -- These subprograms raise Constraint_Error if not Has_Element (Position)
-   function  Fetch       (Position  : in Cursor) return Component;
-   procedure Replace     (Position  : in Cursor; Element : in Component);
+   --  These subprograms raise Constraint_Error if not Has_Element (Position)
+   function  Fetch       (Position  : Cursor) return Component;
+   procedure Replace     (Position  : Cursor; Element : Component);
 
 private
 
-   -- As the component type can be indefinite, we need
-   -- to define an access type to the component type.
+   --  As the component type can be indefinite, we need
+   --  to define an access type to the component type.
    type Component_Access is access Component;
 
    type Node;
@@ -87,9 +89,10 @@ private
          Last  : Cursor;
       end record;
 
-   -- No need to initialize, pointers are initialized to null
+   --  No need to initialize, pointers are initialized to null
    overriding procedure Adjust   (Container : in out Queue);
    overriding procedure Finalize (Container : in out Queue);
 
-   Empty_Queue : constant Queue  := (Ada.Finalization.Controlled with null, null);
+   Empty_Queue : constant Queue := (
+      Ada.Finalization.Controlled with null, null);
 end Linear_Queue;

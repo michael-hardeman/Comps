@@ -37,17 +37,20 @@ with -- Ada
 
 package body Linear_Queue is
 
-   procedure Free is new Ada.Unchecked_Deallocation (Node,      Cursor);
-   procedure Free is new Ada.Unchecked_Deallocation (Component, Component_Access);
+   procedure Free
+      is new Ada.Unchecked_Deallocation (Node, Cursor);
+   procedure Free
+      is new Ada.Unchecked_Deallocation (Component, Component_Access);
 
    ------------
    -- Append --
    ------------
 
-   procedure Append (To : in out Queue; Element : in Component) is
+   procedure Append (To : in out Queue; Element : Component) is
    begin
       if Has_Element (To.Last) then
-         To.Last.Next := new Node'(Element => new Component'(Element), Next => To.Last.Next);
+         To.Last.Next := new Node'(Element => new Component'(Element),
+                                   Next    => To.Last.Next);
          To.Last := To.Last.Next;
       else
          Prepend (To, Element);
@@ -58,7 +61,7 @@ package body Linear_Queue is
    -- Append --
    ------------
 
-   procedure Append (To : in out Queue; Container : in Queue) is
+   procedure Append (To : in out Queue; Container : Queue) is
       Ptr : Cursor := Container.First;
    begin
       while Ptr /= null loop
@@ -71,9 +74,10 @@ package body Linear_Queue is
    -- Prepend --
    -------------
 
-   procedure Prepend (To : in out Queue; Element : in Component) is
+   procedure Prepend (To : in out Queue; Element : Component) is
    begin
-      To.First := new Node'(Element => new Component'(Element), Next => To.First);
+      To.First := new Node'(Element => new Component'(Element),
+                            Next    => To.First);
       if To.First.Next = null then
          To.Last  := To.First;
       end if;
@@ -83,13 +87,16 @@ package body Linear_Queue is
    -- Is_Empty --
    --------------
 
-   function  Is_Empty (Container : in Queue) return Boolean is (Container = Empty_Queue);
+   function Is_Empty (Container : Queue)
+      return Boolean is (Container = Empty_Queue);
 
    -----------
    -- Clear --
    -----------
 
-   procedure Clear (Container : in out Queue; Nb_Elems : in Natural := Natural'Last) is
+   procedure Clear (Container : in out Queue;
+                    Nb_Elems  :        Natural := Natural'Last)
+   is
       Current   : Cursor;
    begin
       for Elem_Count in Natural range 1 .. Nb_Elems loop
@@ -109,7 +116,7 @@ package body Linear_Queue is
    -- First --
    -----------
 
-   function First (Container : in Queue) return Cursor is
+   function First (Container : Queue) return Cursor is
    begin
       return Container.First;
    end First;
@@ -118,17 +125,16 @@ package body Linear_Queue is
    -- Last --
    ----------
 
-   function Last (Container : in Queue) return Cursor is
+   function Last (Container : Queue) return Cursor is
    begin
       return Container.Last;
    end Last;
-
 
    ----------
    -- Next --
    ----------
 
-   function Next (Position : in Cursor) return Cursor is
+   function Next (Position : Cursor) return Cursor is
    begin
       return Position.Next;
    end Next;
@@ -137,7 +143,7 @@ package body Linear_Queue is
    -- Fetch --
    -----------
 
-   function Fetch (Position : in Cursor) return Component is
+   function Fetch (Position : Cursor) return Component is
    begin
       return Position.Element.all;
    end Fetch;
@@ -146,7 +152,7 @@ package body Linear_Queue is
    -- Replace --
    -------------
 
-   procedure Replace (Position : in Cursor; Element : in Component) is
+   procedure Replace (Position : Cursor; Element : Component) is
    begin
       Free (Position.Element);
       Position.Element := new Component'(Element);
@@ -156,7 +162,7 @@ package body Linear_Queue is
    -- Has_Element --
    -----------------
 
-   function Has_Element (Position : in Cursor) return Boolean is
+   function Has_Element (Position : Cursor) return Boolean is
    begin
       return Position /= null;
    end Has_Element;
@@ -165,6 +171,7 @@ package body Linear_Queue is
    -- Adjust --
    ------------
 
+   overriding
    procedure Adjust (Container : in out Queue) is
       Current : Cursor;
    begin
@@ -172,13 +179,15 @@ package body Linear_Queue is
          return;
       end if;
 
-      Container.First := new Node'(Element => new Component'(Container.First.Element.all),
-                                   Next    => Container.First.Next);
+      Container.First := new Node'(
+         Element => new Component'(Container.First.Element.all),
+         Next    => Container.First.Next);
       Current := Container.First;
       Container.Last := Current;
       while Has_Element (Current.Next) loop
-         Current.Next := new Node'(Element => new Component'(Current.Next.Element.all),
-                                   Next    => Current.Next.Next);
+         Current.Next := new Node'(
+            Element => new Component'(Current.Next.Element.all),
+            Next    => Current.Next.Next);
          Current := Current.Next;
          Container.Last := Current;
       end loop;
@@ -188,6 +197,7 @@ package body Linear_Queue is
    -- Finalize --
    --------------
 
+   overriding
    procedure Finalize (Container : in out Queue) is
    begin
       Clear (Container);

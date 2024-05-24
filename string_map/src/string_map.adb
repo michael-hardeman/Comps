@@ -4,17 +4,23 @@ with   -- Standard units
 
 package body String_Map is
 
-   type String_Iterator (Length : Natural) is new Iterator.Forward_Iterator with
-      record
+   type String_Iterator (Length : Natural)
+      is new Iterator.Forward_Iterator
+      with record
          To_Parse : String (1 .. Length);
       end record;
+
+   overriding
    function First (Object : String_Iterator) return Cursor;
+
+   overriding
    function Next  (Object : String_Iterator; Position : Cursor) return Cursor;
 
    -----------
    -- First --
    -----------
 
+   overriding
    function First (Object : String_Iterator) return Cursor is
    begin
       return Next (Object, (Length  => Object.Length,
@@ -23,11 +29,11 @@ package body String_Map is
                             others  => <>));
    end First;
 
-
    ----------
    -- Next --
    ----------
 
+   overriding
    function Next (Object : String_Iterator; Position : Cursor) return Cursor is
       pragma Unreferenced (Object);
 
@@ -48,7 +54,8 @@ package body String_Map is
 
          if Result.Params (Result.Current) = '"' then
             if State = Key then
-               raise Parse_Error with "Illegal character in key: " & Result.Params (Result.Current);
+               raise Parse_Error with "Illegal character in key: " &
+                                      Result.Params (Result.Current);
             end if;
             Quoted := True;
             Result.Current := Result.Current + 1;
@@ -88,7 +95,8 @@ package body String_Map is
                   end if;
                when others =>
                   if State = Key then
-                     raise Parse_Error with "Illegal character in key: " & Result.Params (Result.Current);
+                     raise Parse_Error with "Illegal character in key: " &
+                                            Result.Params (Result.Current);
                   end if;
                   Result.Current := Result.Current + 1;
             end case;
@@ -115,8 +123,8 @@ package body String_Map is
          end loop;
       end Skip_Spaces;
    begin
-      -- Invariant: Result.Current points at the first charactor of the next key
-      -- (or outside the string if no more parameters).
+      --  Invariant: Result.Current points at the first charactor of the next
+      --  key (or outside the string if no more parameters).
       Result.K_First := Result.Current;
       if Result.Current > Result.Params'Last then
          return Result;
@@ -143,7 +151,7 @@ package body String_Map is
 
    function Has_Element (Position : Cursor) return Boolean is
    begin
-      --return Position /= Empty_Cursor;
+      --  return Position /= Empty_Cursor;
       return Position.K_First <= Position.Params'Last;
    end Has_Element;
 
@@ -155,7 +163,8 @@ package body String_Map is
       use Ada.Strings, Ada.Strings.Fixed;
       Good_String : constant String := Trim (Params, Both);
    begin
-      return String_Iterator'(Length => Good_String'Length, To_Parse => Good_String);
+      return String_Iterator'(Length   => Good_String'Length,
+                              To_Parse => Good_String);
    end Parse;
 
    ---------
@@ -177,9 +186,10 @@ package body String_Map is
          return C.Params (C.V_First .. C.V_Last);
       end if;
 
-      -- Quoted string
+      --  Quoted string
       declare
-         Result : String (1 .. C.V_Last - C.V_First + 1 - 2);  -- -2: don't include surrounding quotes
+         --  -2: don't include surrounding quotes
+         Result : String (1 .. C.V_Last - C.V_First + 1 - 2);
          Inx    : Natural := 0;
          Ignore : Boolean := False;
       begin
@@ -194,7 +204,7 @@ package body String_Map is
                end if;
             end if;
          end loop;
-         return Result (1..Inx);
+         return Result (1 .. Inx);
       end;
    end Value;
 

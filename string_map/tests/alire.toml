@@ -1,0 +1,18 @@
+name = "string_map_tests"
+description = "Tests the string_maps component"
+version = "0.1.0-dev"
+
+authors = ["Jean-Pierre Rosen"]
+maintainers = ["Jean-Pierre Rosen <rosen@adalog.fr>"]
+maintainers-logins = ["jprosen"]
+licenses = "GPL-2.0-or-later"
+website = "https://adalog.fr/en/components.html"
+tags = ["tests"]
+
+executables = ["string_map_tests"]
+
+[[depends-on]]
+string_map = "*"
+
+[[pins]]
+string_map = { path='..' }

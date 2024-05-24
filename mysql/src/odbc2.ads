@@ -31,9 +31,6 @@
 ---------------------------------------------------------------------------
 --
 --  HISTORY
---  2023-05-23   Michael Hardeman
---     Updated code style following Alire guidelines
---
 --  1999-07-09   Sune Falck
 --     Added Bind_Output/Bind_Input for access to Integer, Float and Long_Float
 --

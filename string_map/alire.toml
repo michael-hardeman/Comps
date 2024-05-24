@@ -1,0 +1,10 @@
+name = "string_map"
+description = "A simple parser for key value pair text files"
+version = "0.1.0-dev"
+
+authors = ["Jean-Pierre Rosen"]
+maintainers = ["Jean-Pierre Rosen <rosen@adalog.fr>"]
+maintainers-logins = ["jprosen"]
+licenses = "GPL-2.0-or-later"
+website = "https://adalog.fr/en/components.html"
+tags = ["key-value", "parser"]

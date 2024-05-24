@@ -32,28 +32,29 @@
 package String_Matching_Portable is
    pragma Elaborate_Body;
 
-   -----------------------------------------
-   --                                     --
-   -- String pattern matching utilitities --
-   -- (Simple matching)                   --
-   --                                     --
-   -----------------------------------------
+   ------------------------------------------
+   --                                      --
+   --  String pattern matching utilitities --
+   --  (Simple matching)                   --
+   --                                      --
+   ------------------------------------------
 
-   -- Check if "Name" matches "Pattern"
+   --  Check if "Name" matches "Pattern"
    function Match (Source      : Wide_String;
                    Pattern     : Wide_String;
                    Ignore_Case : Boolean := False) return Boolean;
 
-   -- Using precompiled pattern
+   --  Using precompiled pattern
    type Compiled_Pattern (<>) is private;
    function Compile (Pattern     : Wide_String;
                      Ignore_Case : Boolean := False) return Compiled_Pattern;
-   function Match   (Source : Wide_String; Pattern : Compiled_Pattern) return Boolean;
+   function Match   (Source : Wide_String;
+                     Pattern : Compiled_Pattern) return Boolean;
 
    Pattern_Error : exception;
 
 private
-   -- We have no compiled form, hence we just keep the original pattern
+   --  We have no compiled form, hence we just keep the original pattern
    type Compiled_Pattern (Size : Natural) is
       record
          Ignore_Case : Boolean;

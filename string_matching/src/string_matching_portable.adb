@@ -39,7 +39,7 @@ package body String_Matching_Portable is
    -- To_Upper --
    --------------
 
-   function To_Upper (Item : in Wide_String) return Wide_String is
+   function To_Upper (Item : Wide_String) return Wide_String is
       use Ada.Strings.Wide_Maps, Ada.Strings.Wide_Maps.Wide_Constants;
 
       Result : Wide_String (1 .. Item'Length);
@@ -66,7 +66,8 @@ package body String_Matching_Portable is
    -- Match (Compiled_Pattern) --
    ------------------------------
 
-   function Match (Source : Wide_String; Pattern : Compiled_Pattern) return Boolean is
+   function Match (Source : Wide_String;
+                   Pattern : Compiled_Pattern) return Boolean is
    begin
       return Match (Source, Pattern.Pattern, Pattern.Ignore_Case);
    end Match;
@@ -79,24 +80,27 @@ package body String_Matching_Portable is
                    Pattern     : Wide_String;
                    Ignore_Case : Boolean := False) return Boolean
    is
-      function Basic_Match (Source : Wide_String; Pattern : Wide_String) return Boolean is
+      function Basic_Match (Source : Wide_String;
+                            Pattern : Wide_String) return Boolean is
          Pattern_Inx : Positive := Pattern'First;
          Source_Inx  : Positive := Source'First;
       begin
          loop
             case Pattern (Pattern_Inx) is
                when '?' =>
-                  -- allways matches
+                  --  allways matches
                   null;
 
                when '*' =>
                   if Pattern_Inx = Pattern'Last then
-                     -- Final '*'
+                     --  Final '*'
                      return True;
                   end if;
 
                   for I in Source_Inx .. Source'Last loop
-                     if Basic_Match (Source (I .. Source'Last), Pattern (Pattern_Inx + 1 .. Pattern'Last)) then
+                     if Basic_Match (Source (I .. Source'Last),
+                                     Pattern (Pattern_Inx + 1 .. Pattern'Last))
+                     then
                         return True;
                      end if;
                   end loop;
@@ -111,7 +115,10 @@ package body String_Matching_Portable is
             if Source_Inx = Source'Last then
                if Pattern_Inx = Pattern'Last then
                   return True;
-               elsif Pattern_Inx = Pattern'Last - 1 and then Pattern (Pattern_Inx + 1) = '*' then
+               elsif
+                  Pattern_Inx = Pattern'Last - 1 and
+                  Pattern (Pattern_Inx + 1) = '*'
+               then
                   return True;
                else
                   return False;

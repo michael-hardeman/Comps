@@ -47,11 +47,12 @@ package body Variable_Length is
    -- Move --
    ----------
 
-   procedure Move (Source : in  Variable_String;
-                   Target : out Variable_String;
-                   Drop   : in  Ada.Strings.Truncation := Ada.Strings.Error) is
+   procedure Move (
+      Source :     Variable_String;
+      Target : out Variable_String;
+      Drop   :     Ada.Strings.Truncation := Ada.Strings.Error) is
    begin
-      To_Variable_String (To_String(Source), Target, Drop);
+      To_Variable_String (To_String (Source), Target, Drop);
    end Move;
 
    ---------------
@@ -60,16 +61,17 @@ package body Variable_Length is
 
    function To_String (Source : Variable_String) return String is
    begin
-      return Source.Content (1..Source.Length);
+      return Source.Content (1 .. Source.Length);
    end To_String;
 
    ------------------------
    -- To_Variable_String --
    ------------------------
 
-   function To_Variable_String (Max    : Positive;
-                                Source : in  String := "";
-                                Drop   : in  Ada.Strings.Truncation := Ada.Strings.Error)
+   function To_Variable_String (
+      Max    : Positive;
+      Source : String := "";
+      Drop   : Ada.Strings.Truncation := Ada.Strings.Error)
       return Variable_String
    is
       Local_Object : Variable_String (Max);
@@ -82,23 +84,26 @@ package body Variable_Length is
    -- To_Variable_String --
    ------------------------
 
-   procedure To_Variable_String (Source : in  String := "";
-                                 Target : out Variable_String;
-                                 Drop   : in  Ada.Strings.Truncation := Ada.Strings.Error)
+   procedure To_Variable_String (
+      Source :     String := "";
+      Target : out Variable_String;
+      Drop   :     Ada.Strings.Truncation := Ada.Strings.Error)
    is
       use Ada.Strings;
    begin
       if Target.Max >= Source'Length then
          Target.Length := Source'Length;
-         Target.Content (1..Target.Length) := Source;
+         Target.Content (1 .. Target.Length) := Source;
       else
          case Drop is
          when Left  =>
             Target.Length  := Source'Length;
-            Target.Content := Source(Source'Last-Target.Max+1 .. Source'Last);
+            Target.Content :=
+               Source (Source'Last - Target.Max + 1 .. Source'Last);
          when Right =>
             Target.Length  := Source'Length;
-            Target.Content := Source(Source'First .. Source'First+Target.Max-1);
+            Target.Content :=
+               Source (Source'First .. Source'First + Target.Max - 1);
          when Error =>
             raise Length_Error;
          end case;
@@ -109,13 +114,15 @@ package body Variable_Length is
    -- "&" --
    ---------
 
-   function "&" (Left : Variable_String; Right : String) return Variable_String is
+   function "&" (Left : Variable_String;
+                 Right : String) return Variable_String is
       Result : Variable_String := Left;
    begin
       if Result.Length + Right'Length > Result.Max then
          raise Length_Error;
       else
-         Result.Content(Result.Length+1 .. Result.Length+Right'Length) := Right;
+         Result.Content (
+            Result.Length + 1 .. Result.Length + Right'Length) := Right;
          Result.Length := Result.Length + Right'Length;
       end if;
       return Result;
@@ -125,14 +132,15 @@ package body Variable_Length is
    -- "&" --
    ---------
 
-   function "&" (Left : Variable_String; Right : Character) return Variable_String is
+   function "&" (Left : Variable_String;
+                 Right : Character) return Variable_String is
       Result : Variable_String := Left;
    begin
       if Result.Length = Result.Max then
          raise Length_Error;
       else
          Result.Length := Result.Length + 1;
-         Result.Content(Result.Length) := Right;
+         Result.Content (Result.Length) := Right;
       end if;
       return Result;
    end "&";
@@ -141,18 +149,21 @@ package body Variable_Length is
    -- "&" --
    ---------
 
-   function "&" (Left : Variable_String; Right : Variable_String) return Variable_String is
+   function "&" (Left : Variable_String;
+                 Right : Variable_String) return Variable_String is
    begin
-      return Left & To_String(Right);
+      return Left & To_String (Right);
    end "&";
 
    ---------
    -- "=" --
    ---------
 
-   function "=" (Left : Variable_String; Right : Variable_String) return Boolean is
+   overriding
+   function "=" (Left : Variable_String;
+                 Right : Variable_String) return Boolean is
    begin
-      return To_String(Left) = To_String(Right);
+      return To_String (Left) = To_String (Right);
    end "=";
 
    ---------
@@ -161,7 +172,7 @@ package body Variable_Length is
 
    function "=" (Left : Variable_String; Right : String) return Boolean is
    begin
-      return To_String(Left) = Right;
+      return To_String (Left) = Right;
    end "=";
 
    ---------
@@ -170,16 +181,17 @@ package body Variable_Length is
 
    function "=" (Left : String; Right : Variable_String) return Boolean is
    begin
-      return Left = To_String(Right);
+      return Left = To_String (Right);
    end "=";
 
    ---------
    -- "<" --
    ---------
 
-   function "<" (Left : Variable_String; Right : Variable_String) return Boolean is
+   function "<" (Left : Variable_String;
+                 Right : Variable_String) return Boolean is
    begin
-      return To_String(Left) < To_String(Right);
+      return To_String (Left) < To_String (Right);
    end "<";
 
    ---------
@@ -188,7 +200,7 @@ package body Variable_Length is
 
    function "<" (Left : Variable_String; Right : String) return Boolean is
    begin
-      return To_String(Left) < Right;
+      return To_String (Left) < Right;
    end "<";
 
    ---------
@@ -197,16 +209,17 @@ package body Variable_Length is
 
    function "<" (Left : String; Right : Variable_String) return Boolean is
    begin
-      return Left < To_String(Right);
+      return Left < To_String (Right);
    end "<";
 
    ----------
    -- "<=" --
    ----------
 
-   function "<=" (Left : Variable_String; Right : Variable_String) return Boolean is
+   function "<=" (Left : Variable_String;
+                  Right : Variable_String) return Boolean is
    begin
-      return To_String(Left) <= To_String(Right);
+      return To_String (Left) <= To_String (Right);
    end "<=";
 
    ----------
@@ -215,7 +228,7 @@ package body Variable_Length is
 
    function "<=" (Left : Variable_String; Right : String) return Boolean is
    begin
-      return To_String(Left) <= Right;
+      return To_String (Left) <= Right;
    end "<=";
 
    ----------
@@ -224,16 +237,17 @@ package body Variable_Length is
 
    function "<=" (Left : String; Right : Variable_String) return Boolean is
    begin
-      return Left <= To_String(Right);
+      return Left <= To_String (Right);
    end "<=";
 
    ---------
    -- ">" --
    ---------
 
-   function ">" (Left : Variable_String; Right : Variable_String) return Boolean is
+   function ">" (Left : Variable_String;
+                 Right : Variable_String) return Boolean is
    begin
-      return To_String(Left) > To_String(Right);
+      return To_String (Left) > To_String (Right);
    end ">";
 
    ---------
@@ -242,7 +256,7 @@ package body Variable_Length is
 
    function ">" (Left : Variable_String; Right : String) return Boolean is
    begin
-      return To_String(Left) > Right;
+      return To_String (Left) > Right;
    end ">";
 
    ---------
@@ -251,16 +265,17 @@ package body Variable_Length is
 
    function ">" (Left : String; Right : Variable_String) return Boolean is
    begin
-      return Left > To_String(Right);
+      return Left > To_String (Right);
    end ">";
 
    ----------
    -- ">=" --
    ----------
 
-   function ">=" (Left : Variable_String; Right : Variable_String) return Boolean is
+   function ">=" (Left : Variable_String;
+                  Right : Variable_String) return Boolean is
    begin
-      return To_String(Left) >= To_String(Right);
+      return To_String (Left) >= To_String (Right);
    end ">=";
 
    ----------
@@ -269,7 +284,7 @@ package body Variable_Length is
 
    function ">=" (Left : Variable_String; Right : String) return Boolean is
    begin
-      return To_String(Left) >= Right;
+      return To_String (Left) >= Right;
    end ">=";
 
    ----------
@@ -278,7 +293,7 @@ package body Variable_Length is
 
    function ">=" (Left : String; Right : Variable_String) return Boolean is
    begin
-      return Left >= To_String(Right);
+      return Left >= To_String (Right);
    end ">=";
 
 end Variable_Length;

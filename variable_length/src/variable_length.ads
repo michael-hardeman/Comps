@@ -41,42 +41,63 @@ package Variable_Length is
 
    function Length (Source : Variable_String) return Natural;
 
-   procedure Move (Source : in  Variable_String;
+   procedure Move (Source :     Variable_String;
                    Target : out Variable_String;
-                   Drop   : in  Ada.Strings.Truncation := Ada.Strings.Error);
+                   Drop   :     Ada.Strings.Truncation := Ada.Strings.Error);
 
    function  To_String  (Source : Variable_String) return String;
-   function  To_Variable_String (Max    : Positive;
-                                 Source : String := "";
-                                 Drop   : Ada.Strings.Truncation := Ada.Strings.Error)
+   function  To_Variable_String (
+      Max    : Positive;
+      Source : String := "";
+      Drop   : Ada.Strings.Truncation := Ada.Strings.Error)
       return Variable_String;
-   procedure To_Variable_String (Source : in  String := "";
-                                 Target : out Variable_String;
-                                 Drop   : in  Ada.Strings.Truncation := Ada.Strings.Error);
+   procedure To_Variable_String (
+      Source :     String := "";
+      Target : out Variable_String;
+      Drop   :     Ada.Strings.Truncation := Ada.Strings.Error);
 
-   function "&" (Left : Variable_String; Right : String)          return Variable_String ;
-   function "&" (Left : Variable_String; Right : Character)       return Variable_String ;
-   function "&" (Left : Variable_String; Right : Variable_String) return Variable_String ;
+   function "&" (Left : Variable_String;
+                 Right : String) return Variable_String;
+   function "&" (Left : Variable_String;
+                 Right : Character) return Variable_String;
+   function "&" (Left : Variable_String;
+                 Right : Variable_String) return Variable_String;
 
-   function "="  (Left : Variable_String; Right : Variable_String) return Boolean;
-   function "="  (Left : Variable_String; Right : String         ) return Boolean;
-   function "="  (Left : String;          Right : Variable_String) return Boolean;
+   overriding
+   function "="  (Left : Variable_String;
+                  Right : Variable_String) return Boolean;
+   function "="  (Left : Variable_String;
+                  Right : String) return Boolean;
+   function "="  (Left : String;
+                  Right : Variable_String) return Boolean;
 
-   function "<"  (Left : Variable_String; Right : Variable_String) return Boolean;
-   function "<"  (Left : Variable_String; Right : String         ) return Boolean;
-   function "<"  (Left : String;          Right : Variable_String) return Boolean;
+   function "<"  (Left : Variable_String;
+                  Right : Variable_String) return Boolean;
+   function "<"  (Left : Variable_String;
+                  Right : String) return Boolean;
+   function "<"  (Left : String;
+                  Right : Variable_String) return Boolean;
 
-   function "<=" (Left : Variable_String; Right : Variable_String) return Boolean;
-   function "<=" (Left : Variable_String; Right : String         ) return Boolean;
-   function "<=" (Left : String;          Right : Variable_String) return Boolean;
+   function "<=" (Left : Variable_String;
+                  Right : Variable_String) return Boolean;
+   function "<=" (Left : Variable_String;
+                  Right : String) return Boolean;
+   function "<=" (Left : String;
+                  Right : Variable_String) return Boolean;
 
-   function ">"  (Left : Variable_String; Right : Variable_String) return Boolean;
-   function ">"  (Left : Variable_String; Right : String         ) return Boolean;
-   function ">"  (Left : String;          Right : Variable_String) return Boolean;
+   function ">"  (Left : Variable_String;
+                  Right : Variable_String) return Boolean;
+   function ">"  (Left : Variable_String;
+                  Right : String) return Boolean;
+   function ">"  (Left : String;
+                  Right : Variable_String) return Boolean;
 
-   function ">=" (Left : Variable_String; Right : Variable_String) return Boolean;
-   function ">=" (Left : Variable_String; Right : String         ) return Boolean;
-   function ">=" (Left : String;          Right : Variable_String) return Boolean;
+   function ">=" (Left : Variable_String;
+                  Right : Variable_String) return Boolean;
+   function ">=" (Left : Variable_String;
+                  Right : String) return Boolean;
+   function ">=" (Left : String;
+                  Right : Variable_String) return Boolean;
 
    Length_Error : exception renames Ada.Strings.Length_Error;
 
@@ -84,6 +105,6 @@ private
    type Variable_String (Max : Positive) is
       record
          Length  : Natural := 0;
-         Content : String (1..Max);
+         Content : String (1 .. Max);
       end record;
 end Variable_Length;

@@ -1,11 +1,11 @@
 ----------------------------------------------------------------------
--- Package Tracer.Assert (specification)                            --
--- (C) Copyright 2004, 2021 ADALOG                                  --
+-- Package Tracer.Timing (specification)                             --
+-- (C) Copyright 1999, 2021 ADALOG                                  --
 -- Author: J-P. Rosen                                               --
 --                                                                  --
--- ADALOG is providing training, consultancy and expertise in Ada   --
--- and related software engineering techniques. For more info about --
--- our services:                                                    --
+--  ADALOG   is   providing   training,   consultancy,   expertise, --
+--  assistance and custom developments  in Ada and related software --
+--  engineering techniques.  For more info about our services:      --
 --  ADALOG                                                          --
 --  2 rue du Docteur Lombard                                        --
 --  92441 ISSY LES MOULINEAUX CEDEX E-m: info@adalog.fr             --
@@ -31,21 +31,28 @@
 --  reasons why  the executable  file might be  covered by  the GNU --
 --  Public License.                                                 --
 ----------------------------------------------------------------------
-
---## rule off No_Debug ## we obviously need to use Tracer here
-private with
+with
   Ada.Finalization;
-package Tracer.Assert is
-   procedure Check (Assumption : Boolean; Message : String);
+package Tracer.Timing is
+   pragma Elaborate_Body;
 
-   -- Reentrancy detector
-   Max_Detector : constant := 10;
-   type Detector_Index is range 1..Max_Detector;
-   type R_Detector (Num : Detector_Index; Message : Tracer_String_Access) is limited private;
+   Max_Timer : constant := 10;
+   type Timer_Index is range 1 .. Max_Timer;
 
+   procedure Start  (The_Timer : Timer_Index);
+   procedure Stop   (The_Timer : Timer_Index; With_Trace : Boolean := False);
+   procedure Reset  (The_Timer : Timer_Index);
+
+   type Auto_Timer (The_Timer  : Timer_Index;
+                    With_Trace : Boolean) is limited private;
+
+   procedure Name   (The_Timer : Timer_Index; As : Wide_String);
+   procedure Report (The_Timer : Timer_Index);
+   procedure Report_All;
 private
-   type R_Detector (Num : Detector_Index; Message : Tracer_String_Access) is
+   type Auto_Timer (The_Timer  : Timer_Index;
+                    With_Trace : Boolean) is
      new Ada.Finalization.Limited_Controlled with null record;
-   overriding procedure Finalize (Item : in out R_Detector);
-   overriding procedure Initialize (Item : in out R_Detector);
-end Tracer.Assert;
+   overriding procedure Initialize (Item : in out Auto_Timer);
+   overriding procedure Finalize   (Item : in out Auto_Timer);
+end Tracer.Timing;

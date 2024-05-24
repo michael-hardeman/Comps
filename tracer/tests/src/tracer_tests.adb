@@ -1,16 +1,16 @@
 --## rule off No_Debug ## we obviously need to use Tracer here
 with Tracer.Timing;
-with Ada.Text_Io;
+with Ada.Wide_Text_IO;
 
 with Ttracer2;
-procedure Ttracer is
+procedure Tracer_Tests is
    use Tracer, Ttracer2;
 
    My_Exception : exception;
    Final : Emergency_Exit;
 
-   procedure Title (Message : String) is
-      use Ada.Text_Io;
+   procedure Title (Message : Wide_String) is
+      use Ada.Wide_Text_Io;
    begin
       New_Line;
       Put ("----------- ");
@@ -18,7 +18,7 @@ procedure Ttracer is
    end Title;
 
    type Integer_Array is array (1..4) of Integer;
-begin  --Ttracer
+begin  --Tracer_Tests
    Set_Watch (Put_Count'Access);
 
    -- Simple trace demo
@@ -33,7 +33,7 @@ begin  --Ttracer
    -- Stream trace
    Title ("Demonstration of tracing to a stream");
    Trace ("The string ""ABC""");
-   String'Write (Trace_Stream, "ABC");
+   Wide_String'Write (Trace_Stream, "ABC");
    Trace ("The Integer 16#00414243#");
    Integer'Write (Trace_Stream, 16#00414243#);
    Trace ("An array of Integer");
@@ -66,4 +66,4 @@ begin  --Ttracer
       Pause ("Tasks have started");
       Set_Timer (3.0, Process1'Access);
    end;
-end Ttracer;
+end Tracer_Tests;

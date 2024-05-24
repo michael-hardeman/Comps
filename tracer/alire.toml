@@ -1,0 +1,16 @@
+name = "tracer"
+description = "Some kind of debugging library I'm not sure i understand fully"
+version = "0.1.0-dev"
+
+authors = ["Jean-Pierre Rosen"]
+maintainers = ["Jean-Pierre Rosen <rosen@adalog.fr>"]
+maintainers-logins = ["jprosen"]
+licenses = "GPL-2.0-or-later"
+website = "https://adalog.fr/en/components.html"
+tags = ["debug", "trace", "exception"]
+
+[[depends-on]]
+protection = "~0.1.0-dev"
+
+[[pins]]
+protection = { path='../protection' }

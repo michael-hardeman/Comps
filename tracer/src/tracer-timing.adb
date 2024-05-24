@@ -32,20 +32,20 @@
 --  Public License.                                                 --
 ----------------------------------------------------------------------
 with Ada.Calendar; use Ada.Calendar;
-with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
+with Ada.Strings.Wide_Unbounded; use Ada.Strings.Wide_Unbounded;
 
 with Tracer_Messages;
 package body Tracer.Timing is
 
-   Bad_Time : constant Time := Time_Of(1901, 1, 2);
-   -- Flag for the start date of a stopped timer
+   Bad_Time : constant Time := Time_Of (1901, 1, 2);
+   --  Flag for the start date of a stopped timer
 
    --
-   -- The timers themselves:
+   --  The timers themselves:
    --
    type Timer_Data is
       record
-         Name     : Unbounded_String;
+         Name     : Unbounded_Wide_String;
          Start    : Time     := Bad_Time;
          Total    : Duration := 0.0;
          Nb_Calls : Natural  := 0;
@@ -63,15 +63,16 @@ package body Tracer.Timing is
    -- Timer_Header --
    ------------------
 
-   function Timer_Header (The_Timer : Timer_Index) return String is
+   function Timer_Header (The_Timer : Timer_Index) return Wide_String is
       use Tracer_Messages;
       Timer_Obj   : Timer_Data renames Timer_Tab (The_Timer);
-      Common_Part : constant String := Timer_Name & Timer_Index'Image(The_Timer);
+      Common_Part : constant Wide_String :=
+         Timer_Name & Timer_Index'Wide_Image (The_Timer);
    begin
-      if Timer_Obj.Name = Null_Unbounded_String then
+      if Timer_Obj.Name = Null_Unbounded_Wide_String then
          return Common_Part;
       else
-         return Common_Part & " (" & To_String (Timer_Obj.Name) & ')';
+         return Common_Part & " (" & To_Wide_String (Timer_Obj.Name) & ')';
       end if;
    end Timer_Header;
 
@@ -85,6 +86,7 @@ package body Tracer.Timing is
    -- Initialize --
    ----------------
 
+   overriding
    procedure Initialize (Item : in out Auto_Timer) is
    begin
       Start (Item.The_Timer);
@@ -94,6 +96,7 @@ package body Tracer.Timing is
    -- Finalize --
    --------------
 
+   overriding
    procedure Finalize (Item : in out Auto_Timer) is
    begin
       Stop (Item.The_Timer, Item.With_Trace);
@@ -103,9 +106,9 @@ package body Tracer.Timing is
    -- Name --
    ----------
 
-   procedure Name   (The_Timer : Timer_Index; As : String) is
+   procedure Name (The_Timer : Timer_Index; As : Wide_String) is
    begin
-      Timer_Tab(The_Timer).Name := To_Unbounded_String (As);
+      Timer_Tab (The_Timer).Name := To_Unbounded_Wide_String (As);
    end Name;
 
    ------------
@@ -125,9 +128,11 @@ package body Tracer.Timing is
 
       else
          Trace (Timer_Header (The_Timer)
-                & Total_Message    & Duration'Image (Timer_Obj.Total) & Seconds_Message
-                & Nb_Calls_Message & Integer'Image (Timer_Obj.Nb_Calls)
-                & Average_Message  & Duration'Image (Timer_Obj.Total/Timer_Obj.Nb_Calls)
+                & Total_Message &
+                Duration'Wide_Image (Timer_Obj.Total) & Seconds_Message
+                & Nb_Calls_Message & Integer'Wide_Image (Timer_Obj.Nb_Calls)
+                & Average_Message &
+                Duration'Wide_Image (Timer_Obj.Total / Timer_Obj.Nb_Calls)
                 & Seconds_Message);
       end if;
    exception
@@ -144,7 +149,7 @@ package body Tracer.Timing is
       Found : Boolean := False;
    begin
       for I in Timer_Index loop
-         if Timer_Tab(I).Nb_Calls /= 0 then
+         if Timer_Tab (I).Nb_Calls /= 0 then
             Found := True;
             Report (I);
          end if;
@@ -172,12 +177,12 @@ package body Tracer.Timing is
       Timer_Obj : Timer_Data renames Timer_Tab (The_Timer);
    begin
       if Timer_Obj.Start /= Bad_Time then
-        -- Already started, ignore Start
-        return;
+         --  Already started, ignore Start
+         return;
       end if;
 
       Timer_Obj.Start    := Clock;
-      Timer_Obj.Nb_Calls := Timer_Obj.Nb_Calls+1;
+      Timer_Obj.Nb_Calls := Timer_Obj.Nb_Calls + 1;
    end Start;
 
    ----------
@@ -189,24 +194,25 @@ package body Tracer.Timing is
 
    begin
       if Timer_Obj.Start = Bad_Time then
-        -- not started, ignore Stop
-        return;
+         --  not started, ignore Stop
+         return;
       end if;
 
-      Timer_Obj.Total    := Timer_Obj.Total + (Clock-Timer_Obj.Start);
+      Timer_Obj.Total := Timer_Obj.Total + (Clock - Timer_Obj.Start);
       if With_Trace then
          Trace (Timer_Header (The_Timer)
-                & ':' & Duration'Image (Clock-Timer_Obj.Start) );
+                & ':' & Duration'Wide_Image (Clock - Timer_Obj.Start));
       end if;
       Timer_Obj.Start    := Bad_Time;
    end Stop;
 
-   -- Package finalization:
-   -- Make sure timings are reported at the end of run.
-   -- This MUST be declared at the end of the package, to make sure
-   -- Report_All is called before any other finalization (notably the names)
-   -- takes place.
-   package Timing_Last_Will is new Last_Will (To_Do => Report_All,
-                                              Label => Tracer_Messages.Last_Timer_Message);
+   --  Package finalization:
+   --  Make sure timings are reported at the end of run.
+   --  This MUST be declared at the end of the package, to make sure
+   --  Report_All is called before any other finalization (notably the names)
+   --  takes place.
+   package Timing_Last_Will
+      is new Last_Will (To_Do => Report_All,
+                        Label => Tracer_Messages.Last_Timer_Message);
 
 end Tracer.Timing;

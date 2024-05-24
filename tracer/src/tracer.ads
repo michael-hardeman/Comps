@@ -43,15 +43,16 @@ private with
   Ada.Unchecked_Deallocation;
 package Tracer is
    pragma Elaborate_Body;
+   package AE renames Ada.Exceptions;
    package ATI renames Ada.Task_Identification;
 
-   -- A Debug_String is really a String.
-   -- We make it a different type to ensure that the "+" function
-   -- does not introduce ambiguities with user defined "+" functions
-   -- on strings, even in the presence of use clauses.
+   --  A Debug_String is really a String.
+   --  We make it a different type to ensure that the "+" function
+   --  does not introduce ambiguities with user defined "+" functions
+   --  on strings, even in the presence of use clauses.
    type Tracer_String (<>) is limited private;
    type Tracer_String_Access is access Tracer_String;
-   function "+" (Item : String) return Tracer_String_Access;
+   function "+" (Item : Wide_String) return Tracer_String_Access;
 
    --  Trace (...)      prints the message immediately. Potentially blocking
    --                   (cannot be used from a protected operation).
@@ -68,8 +69,8 @@ package Tracer is
    --  All traces are serialized and can be safely used with multiple tasks.
 
    --  Simple traces
-   procedure Trace      (Message : String);
-   procedure Keep_Trace (Message : String;
+   procedure Trace      (Message : Wide_String);
+   procedure Keep_Trace (Message : Wide_String;
                          Caller  : ATI.Task_Id := ATI.Current_Task);
 
    --  Trace nesting of subprogram calls.
@@ -80,51 +81,66 @@ package Tracer is
    --     Tracer: Auto_Tracer (+"My_Subprogram");
    --  The string is automatically freed at subprogram exit
    type Trace_Flag is (Start, Stop);
-   procedure Trace      (Flag    : Trace_Flag; Message : String);
-   procedure Keep_Trace (Flag    : Trace_Flag; Message : String;
-                                               Caller  : ATI.Task_Id := ATI.Current_Task);
+   procedure Trace      (Flag    : Trace_Flag;
+                         Message : Wide_String);
+   procedure Keep_Trace (Flag    : Trace_Flag;
+                         Message : Wide_String;
+                         Caller  : ATI.Task_Id := ATI.Current_Task);
    type Auto_Tracer (Message : Tracer_String_Access) is limited private;
 
    --  Traces of boolean values;
-   procedure Trace      (Message : String; Value   : Boolean);
-   procedure Keep_Trace (Message : String; Value   : Boolean;
-                                           Caller  : ATI.Task_Id := ATI.Current_Task);
+   procedure Trace      (Message : Wide_String;
+                         Value   : Boolean);
+   procedure Keep_Trace (Message : Wide_String;
+                         Value   : Boolean;
+                         Caller  : ATI.Task_Id := ATI.Current_Task);
 
    --  Traces of integer values;
    --  use Trace(Any_Int(V),...) where V is of any integer type.
    type Any_Int is range System.Min_Int .. System.Max_Int;
-   procedure Trace      (Message : String; Value   : Any_Int);
-   procedure Keep_Trace (Message : String; Value   : Any_Int;
-                                           Caller  : ATI.Task_Id := ATI.Current_Task);
+   procedure Trace      (Message : Wide_String;
+                         Value   : Any_Int);
+   procedure Keep_Trace (Message : Wide_String;
+                         Value   : Any_Int;
+                         Caller  : ATI.Task_Id := ATI.Current_Task);
 
    --  Traces of float values;
    --  use Trace(Any_Float(V),...) where V is of any floating-point type.
    type Any_Float is digits System.Max_Digits;
-   procedure Trace      (Message : String; Value   : Any_Float);
-   procedure Keep_Trace (Message : String; Value   : Any_Float;
-                                           Caller  : ATI.Task_Id := ATI.Current_Task);
+   procedure Trace      (Message : Wide_String;
+                         Value   : Any_Float);
+   procedure Keep_Trace (Message : Wide_String;
+                         Value   : Any_Float;
+                         Caller  : ATI.Task_Id := ATI.Current_Task);
 
    --  Traces of exceptions. Generally used in exception handlers.
-   procedure Trace      (Message          : String; Raised_Exception : Ada.Exceptions.Exception_Occurrence);
-   procedure Keep_Trace (Message          : String; Raised_Exception : Ada.Exceptions.Exception_Occurrence;
-                                                    Caller           : ATI.Task_Id  := ATI.Current_Task);
+   procedure Trace      (Message : Wide_String;
+                         Raised_Exception : AE.Exception_Occurrence);
+   procedure Keep_Trace (Message : Wide_String;
+                         Raised_Exception : AE.Exception_Occurrence;
+                         Caller           : ATI.Task_Id  := ATI.Current_Task);
 
    --  Traces of tags.
-   procedure Trace      (Message          : String; Value  : Ada.Tags.Tag);
-   procedure Keep_Trace (Message          : String; Value  : Ada.Tags.Tag;
-                                                    Caller : ATI.Task_Id  := ATI.Current_Task);
+   procedure Trace      (Message : Wide_String;
+                         Value   : Ada.Tags.Tag);
+   procedure Keep_Trace (Message : Wide_String;
+                         Value   : Ada.Tags.Tag;
+                         Caller  : ATI.Task_Id  := ATI.Current_Task);
 
-   --  Traces of any type, using streams. Hexadecimal output of the stream representation.
+   --  Traces of any type, using streams. Hexadecimal output of the stream
+   --  representation.
    --  For any type T use:
-   --     T'Write (Trace_Stream, X)      --Potentially blocking (cannot be used from a protected operation).
+   --     T'Write (Trace_Stream, X)
+   --  Note: The above is Potentially blocking
+   --  (cannot be used from a protected operation).
    --  Any use of T'Read on this stream will raise Program_Error.
 
    type Tracer_Stream_Access is access all Ada.Streams.Root_Stream_Type'Class;
    Trace_Stream : constant Tracer_Stream_Access;
 
    --  Counters
-   type Tracer_Counter is range 1..25;
-   function Tracer_Count (Counter : Tracer_Counter) return String;
+   type Tracer_Counter is range 1 .. 25;
+   function Tracer_Count (Counter : Tracer_Counter) return Wide_String;
 
    --  Flush outstanding messages if any (can be safely called if no
    --  outstanding messages).
@@ -135,7 +151,7 @@ package Tracer is
    --  Blocks all trace operations and returns control to the console
    --  Potentially blocking (cannot be used from a protected operation).
    procedure Pause;
-   procedure Pause (Message : String);
+   procedure Pause (Message : Wide_String);
 
    --  User defined watch procedure
    --  Potentially blocking (cannot be used from a protected operation).
@@ -157,23 +173,24 @@ package Tracer is
    --  The timer can be reset to a new value at any time.
    --  It can be temporarily suspended and resumed with Suspend_Timer and
    --  Resume_Timer.
-   --  All are potentially blocking (cannot be used from a protected operation).
+   --  All are potentially blocking (cannot be used from a protected operation)
    Off : constant Duration := 0.0;
    procedure Set_Timer (How_Long   : Duration;
                         Processing : Procedure_Access := null);
    procedure Suspend_Timer;
    procedure Resume_Timer;
-   -- Time remaining before the timer is triggered
-   -- returns Off if the timer is not active
+   --  Time remaining before the timer is triggered
+   --  returns Off if the timer is not active
    function Remaining_Time return Duration;
 
-   -- Last_Will
-   -- Registers a procedure to be called just before the program terminates.
-   -- Optionnally, the user can give a label to trace this call.
-   -- This package can be instantiated only at static level 0 (library package)
+   --  Last_Will
+   --  Registers a procedure to be called just before the program terminates.
+   --  Optionnally, the user can give a label to trace this call.
+   --  This package can be instantiated only at static level 0 '
+   --  (library package)
    generic
       with procedure To_Do;
-      Label : String := "";
+      Label : Wide_String := "";
    package Last_Will is
    private
       type Proxy is new Ada.Finalization.Limited_Controlled with null record;
@@ -203,27 +220,27 @@ package Tracer is
    File_Trace_Denied : exception;
 
 private
-   type Tracer_String is new String;
-   procedure Free is new Ada.Unchecked_Deallocation (Tracer_String, Tracer_String_Access);
+   type Tracer_String is new Wide_String;
+   procedure Free
+      is new Ada.Unchecked_Deallocation (Tracer_String, Tracer_String_Access);
 
    type Trace_Stream_Type is new Ada.Streams.Root_Stream_Type with null record;
    overriding procedure Read (Stream : in out Trace_Stream_Type;
                    Item   :    out Ada.Streams.Stream_Element_Array;
                    Last   :    out Ada.Streams.Stream_Element_Offset);
    overriding procedure Write (Stream : in out Trace_Stream_Type;
-                    Item   : in     Ada.Streams.Stream_Element_Array);
+                               Item   : Ada.Streams.Stream_Element_Array);
    The_Trace_Stream : aliased Trace_Stream_Type;
    Trace_Stream     : constant Tracer_Stream_Access := The_Trace_Stream'Access;
-
 
    type Auto_Tracer (Message : Tracer_String_Access) is
      new Ada.Finalization.Limited_Controlled with null record;
    overriding procedure Initialize (Object : in out Auto_Tracer);
    overriding procedure Finalize   (Object : in out Auto_Tracer);
 
-   -- For use by children of Debug.
-   -- Autodebug procedures. (see body).
-   procedure Debug_Error (Problem : Ada.Exceptions.Exception_Occurrence;
-                          Where   : String);
-   procedure Itrace (Message : String);
+   --  For use by children of Debug.
+   --  Autodebug procedures. (see body).
+   procedure Debug_Error (Problem : AE.Exception_Occurrence;
+                          Where   : Wide_String);
+   procedure Itrace (Message : Wide_String);
 end Tracer;

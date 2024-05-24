@@ -1,5 +1,5 @@
 ----------------------------------------------------------------------
--- Package Tracer.Assert (body)                                     --
+-- Package Tracer.Assert (specification)                            --
 -- (C) Copyright 2004, 2021 ADALOG                                  --
 -- Author: J-P. Rosen                                               --
 --                                                                  --
@@ -32,63 +32,21 @@
 --  Public License.                                                 --
 ----------------------------------------------------------------------
 
---## rule off No_Debug ## we obviously need to use Tracer here
-with
-  Ada.Task_Identification;
-package body Tracer.Assert  is
-   use Ada.Task_Identification;
+--  ## rule off No_Debug ## we obviously need to use Tracer here
+private with
+  Ada.Finalization;
+package Tracer.Assert is
+   procedure Check (Assumption : Boolean; Message : Wide_String);
 
-   type Detector_Rec is
-      record
-         Caller : Task_Id := Null_Task_Id;
-         Level  : Natural := 0;
-         Message: Tracer_String_Access;
-      end record;
-   Detector_Table : array (Detector_Index) of Detector_Rec;
+   --  Reentrancy detector
+   Max_Detector : constant := 10;
+   type Detector_Index is range 1 .. Max_Detector;
+   type R_Detector (Num : Detector_Index;
+                    Message : Tracer_String_Access) is limited private;
 
-   -----------
-   -- Check --
-   -----------
-
-   procedure Check (Assumption : Boolean; Message : String) is
-   begin
-      if not Assumption then
-         Trace (Message);
-      end if;
-   end Check;
-
-   --------------
-   -- Finalize --
-   --------------
-
-   procedure Finalize (Item : in out R_Detector) is
-      Temp : Tracer_String_Access := Item.Message;
-   begin
-      if Detector_Table (Item.Num).Caller = Current_Task then
-         Detector_Table (Item.Num).Level := Detector_Table (Item.Num).Level - 1;
-         if Detector_Table (Item.Num).Level = 0 then
-            Detector_Table (Item.Num) := (Null_Task_Id, 0, null);
-         end if;
-      end if;
-      Free (Temp);
-   end Finalize;
-
-   ----------------
-   -- Initialize --
-   ----------------
-
-   procedure Initialize (Item : in out R_Detector) is
-   begin
-      if Detector_Table (Item.Num).Caller = Null_Task_Id then
-         Detector_Table (Item.Num) := (Current_Task, 1, Item.Message);
-      elsif Detector_Table (Item.Num).Caller = Current_Task then
-         -- Recursive call
-         Detector_Table (Item.Num).Level := Detector_Table (Item.Num).Level + 1;
-      else
-         Trace ("Reentrancy detected with " & Image (Detector_Table (Item.Num).Caller) &
-                  ": " & String (Item.Message.all) &
-                  " / " & String (Detector_Table (Item.Num).Message.all)) ;
-      end if;
-   end Initialize;
-
+private
+   type R_Detector (Num : Detector_Index; Message : Tracer_String_Access) is
+     new Ada.Finalization.Limited_Controlled with null record;
+   overriding procedure Finalize (Item : in out R_Detector);
+   overriding procedure Initialize (Item : in out R_Detector);
 end Tracer.Assert;

@@ -32,46 +32,48 @@
 --  Public License.                                                 --
 ----------------------------------------------------------------------
 
-with    -- Standard Ada units
+with    --  Standard Ada units
   Ada.Calendar,
   Ada.Characters.Handling,
-  Ada.Strings.Fixed,
+  Ada.Wide_Characters.Handling,
+  Ada.Strings.Wide_Fixed,
   Ada.Task_Attributes,
-  Ada.Text_IO;
+  Ada.Wide_Text_IO;
 
-with    -- Reusable components
+with    --  Reusable components
   Protection;
 pragma Elaborate_All (Protection);
 
-with    -- Application specific units
+with    --  Application specific units
   Tracer_Messages;
 package body Tracer is
-   use Tracer_Messages, Ada.Task_Identification;
+   use
+      Tracer_Messages,
+      Ada.Task_Identification;
 
-   -- This package is a bit big, but splitting it into child units
-   -- would introduce some difficulties without much benefit for the
-   -- user (see file debugimp.htm for a full discussion of this
-   -- issue).
+   --  This package is a bit big, but splitting it into child units
+   --  would introduce some difficulties without much benefit for the
+   --  user (see file debugimp.htm for a full discussion of this
+   --  issue).
    --
-   -- It is however divided in a number of "sections", summarized below.
-   -- A text search on the name of a section should bring you there faster
-   -- than opening another file containing a child unit...
+   --  It is however divided in a number of "sections", summarized below.
+   --  A text search on the name of a section should bring you there faster
+   --  than opening another file containing a child unit...
    --
-   -- SECTION GLOBAL ELEMENTS:
-   --   General types, constants, global variables.
-   -- SECTION AUTODEBUG:
-   --   Some procedures used to debug Debug itself, or for the diagnosis
-   --   of internal failures.
-   -- SECTION SERVICES:
-   --   internal utilities, not exported by Debug
-   -- SECTION PROVIDED SUBPROGRAMS:
-   --   implementation of subprograms provided in the specification of Debug
-
+   --  SECTION GLOBAL ELEMENTS:
+   --    General types, constants, global variables.
+   --  SECTION AUTODEBUG:
+   --    Some procedures used to debug Debug itself, or for the diagnosis
+   --    of internal failures.
+   --  SECTION SERVICES:
+   --    internal utilities, not exported by Debug
+   --  SECTION PROVIDED SUBPROGRAMS:
+   --    implementation of subprograms provided in the specification of Debug
 
    ----------------------------------------------------------------------------
    ----------------------------------------------------------------------------
    --
-   -- SECTION GLOBAL ELEMENTS
+   --  SECTION GLOBAL ELEMENTS
    --
    ----------------------------------------------------------------------------
    ----------------------------------------------------------------------------
@@ -81,15 +83,15 @@ package body Tracer is
    -------------------------------------------------------------------------
 
    Input_Length : constant Positive := 80;
-   -- Maximum length of an input line
+   --  Maximum length of an input line
 
    type Debug_Mode is (Silent, Mono_Task, Multi_Task);
 
-   -- Type to represent indentation levels, etc.
-   -- We have no clear requirement for bounds here, so let's get the
-   -- biggest range possible.
+   --  Type to represent indentation levels, etc.
+   --  We have no clear requirement for bounds here, so let's get the
+   --  biggest range possible.
    type    Big_Int     is range System.Min_Int .. System.Max_Int;
-   subtype Big_Counter is Big_Int range 0..Big_Int'Last;
+   subtype Big_Counter is Big_Int range 0 .. Big_Int'Last;
    No_Pause : constant Big_Counter := 0;
    Step     : constant Big_Counter := 1;
 
@@ -103,28 +105,29 @@ package body Tracer is
 
    Timer_Id : Task_Id;
    Proxy_Id : Task_Id;
-   -- ID's of Debug's internal tasks.
-   -- Set only once in the statement part of the body. No concurrent
-   -- execution is possible at that point (there may be other tasks
-   -- running, but they cannot call Debug).
+   --  ID's of Debug's internal tasks.
+   --  Set only once in the statement part of the body. No concurrent
+   --  execution is possible at that point (there may be other tasks
+   --  running, but they cannot call Debug).
 
    Debug_File_Input : Boolean := False;
    --  True if Debug reads input from a file rather than the keyboard.
    --  Set in the statement part of the body and Unprotected_Pause, read
    --  from Unprotected_Pause which are protected from concurrent execution
 
-   Input_File : Ada.Text_Io.File_Type;
-   -- File variable for reading commands (trace.ini).
-   -- Set only once in the statement part of the body. No concurrent
-   -- execution is possible at that point (there may be other tasks
-   -- running, but they cannot call Debug).
+   Input_File : Ada.Wide_Text_IO.File_Type;
+   --  File variable for reading commands (trace.ini).
+   --  Set only once in the statement part of the body. No concurrent
+   --  execution is possible at that point (there may be other tasks
+   --  running, but they cannot call Debug).
 
-   Debug_Output : Ada.Text_Io.File_Access := Ada.Text_Io.Current_Error;
+   Debug_Output : Ada.Wide_Text_IO.File_Access :=
+      Ada.Wide_Text_IO.Current_Error;
    --  Access to the file used for actual trace output
    --  Set in Set_Target_Unprotected, and read from Print, which
    --  are protected from concurrent execution
 
-   Trace_File : aliased Ada.Text_Io.File_Type;
+   Trace_File : aliased Ada.Wide_Text_IO.File_Type;
    --  File variable for traces to file.
    --  Set in Set_Target_Unprotected, which is protected from concurrent
    --  execution. Pointed at by Debug_Output.
@@ -188,14 +191,13 @@ package body Tracer is
    pragma Atomic (Aborting_Main);
    --  True when Abort_Main has been called.
    --  Set by Abort_Main, used by Display_Status and Unprotected_Flush
-   -- (never reset).  Atomic is sufficient for protection on reading.
+   --  (never reset).  Atomic is sufficient for protection on reading.
 
    New_Message : Boolean := True;
-   -- True when at the start of a new message, implying that the
-   -- "** Debug **" must be printed.
-   -- Set by Console_Output and Execute_Commands, checked by
-   -- Console_Output which are protected from concurrent execution.
-
+   --  True when at the start of a new message, implying that the
+   --  "** Debug **" must be printed.
+   --  Set by Console_Output and Execute_Commands, checked by
+   --  Console_Output which are protected from concurrent execution.
 
    ----------------------------------------------------------------------------
    ----------------------------------------------------------------------------
@@ -223,15 +225,18 @@ package body Tracer is
    --
 
    procedure Debug_Error (Problem : Ada.Exceptions.Exception_Occurrence;
-                          Where   : String)
+                          Where   : Wide_String)
    is
+      use Ada.Characters.Handling;
       --  We don't care about protection at this level.
       --  Since this procedure actually prints something, it is erroneous if
       --  the offending procedure was called from a protected object.
       --  Well, since it is not supposed to be called at all...
-      use Ada.Text_Io, Ada.Exceptions;
-      Message     : constant String := Exception_Message (Problem);
-      Information : constant String := Exception_Information (Problem);
+      use Ada.Wide_Text_IO, Ada.Exceptions;
+      Message     : constant Wide_String :=
+         To_Wide_String (Exception_Message (Problem));
+      Information : constant Wide_String :=
+         To_Wide_String (Exception_Information (Problem));
    begin
       --  We should use the Print procedure, but at this level
       --  there is nothing we can trust, so we allow ourself no other service.
@@ -240,7 +245,7 @@ package body Tracer is
       Put (Debug_Output.all, Trace_Message);
       Put (Debug_Output.all, Where);
       Put (Debug_Output.all, " : ");
-      Put (Debug_Output.all, Exception_Name (Problem));
+      Put (Debug_Output.all, To_Wide_String (Exception_Name (Problem)));
       New_Line (Debug_Output.all);
       if Message /= "" then
          Put (Debug_Output.all, Tracer_Message);
@@ -279,41 +284,43 @@ package body Tracer is
    --  When false, disables ITrace.
    --  Used when you want to leave ITrace calls into your code...
 
-   procedure Itrace (Message : String) is
-      use Ada.Text_Io;
+   procedure Itrace (Message : Wide_String) is
+      use Ada.Wide_Text_IO, Ada.Characters.Handling;
 
-      -- File used for Itrace output
-      -- Normally, the same as Debug_Output, but it may be convenient to
-      -- have Itrace output different from "regular" Debug output
-      -- (f.e. Standard_Output). Change the following constant if needed
+      --  File used for Itrace output
+      --  Normally, the same as Debug_Output, but it may be convenient to
+      --  have Itrace output different from "regular" Debug output
+      --  (f.e. Standard_Output). Change the following constant if needed
       Itrace_Output : constant File_Access := Debug_Output;
    begin
-      if not Itrace_Active then  --## rule line off SIMPLIFIABLE_STATEMENTS ## Conditional compilation
+      --  ## rule line off SIMPLIFIABLE_STATEMENTS ## Conditional compilation
+      if not Itrace_Active then
          return;
       end if;
 
-      if Itrace_Protected then  --## rule line off SIMPLIFIABLE_STATEMENTS ## Conditional compilation
+      --  ## rule line off SIMPLIFIABLE_STATEMENTS ## Conditional compilation
+      if Itrace_Protected then
          Exclusion.P;
       end if;
 
       Set_Col (Itrace_Output.all, 1);
       Put (Itrace_Output.all, "+++ (");
-      Put (Itrace_Output.all, Image (Current_Task));
+      Put (Itrace_Output.all, To_Wide_String (Image (Current_Task)));
       Put (Itrace_Output.all, ") ");
       Put (Itrace_Output.all, Message);
       New_Line (Itrace_Output.all);
 
-      if Itrace_Protected then  --## rule line off SIMPLIFIABLE_STATEMENTS ## Conditional compilation
+      --  ## rule line off SIMPLIFIABLE_STATEMENTS ## Conditional compilation
+      if Itrace_Protected then
          Exclusion.V;
       end if;
    exception
-      when Occur: others =>
+      when Occur : others =>
          if Itrace_Protected and then Exclusion.Holder = Current_Task then
             Exclusion.V;
          end if;
          Debug_Error (Occur, "ITrace");
    end Itrace;
-
 
    ----------------------------------------------------------------------------
    ----------------------------------------------------------------------------
@@ -322,7 +329,6 @@ package body Tracer is
    --                                                                        --
    ----------------------------------------------------------------------------
    ----------------------------------------------------------------------------
-
 
    -------------------------------------------------------------------------
    --  Management of task attributes
@@ -375,10 +381,11 @@ package body Tracer is
          --  Current_Task
       end Get_Level;
 
-      procedure Set_Mark (To : Boolean; On : Task_Id)is
+      procedure Set_Mark (To : Boolean; On : Task_Id) is
          use Task_Info_Package;
-         Info : Local_Information; -- Do not use initialization
-                                   -- since we want to catch Tasking_Error
+         Info : Local_Information;
+         --  Do not use initialization
+         --  since we want to catch Tasking_Error
       begin
          Info        := Value (On);
          Info.Marked := To;
@@ -397,7 +404,6 @@ package body Tracer is
             return False;
       end Is_Marked;
    end Task_Info;
-
 
    -------------------------------------------------------------------------
    --  Misc. utilities
@@ -422,10 +428,10 @@ package body Tracer is
    end Timer;
 
    task body Timer is
-      -- The Timer is an abstract state machine.
-      -- Each call moves it from a state to another (or the same) one
-      -- This behaviour is properly modelled with Goto's...
-      -- Presumably the last proper use of Goto's in Ada.
+      --  The Timer is an abstract state machine.
+      --  Each call moves it from a state to another (or the same) one
+      --  This behaviour is properly modelled with Goto's...
+      --  Presumably the last proper use of Goto's in Ada.
 
       use Ada.Calendar;
 
@@ -575,16 +581,15 @@ package body Tracer is
       end select;
    end Timer;
 
-
    --
-   -- Entering silent mode
-   -- It is not possible to exit silent mode, since all calls to Debug
-   -- are ignored in this mode.
+   --  Entering silent mode
+   --  It is not possible to exit silent mode, since all calls to Debug
+   --  are ignored in this mode.
    --
    procedure Enter_Silent_Mode is
-      use Ada.Text_Io;
+      use Ada.Wide_Text_IO;
    begin
-      -- Get rid of as much as we can
+      --  Get rid of as much as we can
       abort Timer;
 
       if Is_Open (Trace_File) then
@@ -595,13 +600,12 @@ package body Tracer is
          Debug_File_Input := False;
       end if;
 
-      -- If other tasks are waiting on the semaphore, do not allow
-      -- them to proceed
+      --  If other tasks are waiting on the semaphore, do not allow
+      --  them to proceed
       Exclusion.Close;
 
       Current_Mode := Silent;
    end Enter_Silent_Mode;
-
 
    --------------------
    --  General Abort --
@@ -634,7 +638,7 @@ package body Tracer is
 
    function Is_Debug_Task (Id : Task_Id) return Boolean is
    begin
-      return Id = Proxy_Id or Id = Timer_Id;
+      return Id = Proxy_Id or else Id = Timer_Id;
    end Is_Debug_Task;
 
    ----------------
@@ -651,7 +655,7 @@ package body Tracer is
          return True;
 
       elsif Is_Debug_Task (Caller) then
-         -- allways trace calls from the timer proc, for example.
+         --  always trace calls from the timer proc, for example.
          return False;
 
       else
@@ -674,25 +678,25 @@ package body Tracer is
    --  Format a Task_Id
    --
 
-   function Format (Id : Task_Id) return String is
+   function Format (Id : Task_Id) return Wide_String is
+      use Ada.Characters.Handling;
    begin
       if Current_Mode /= Multi_Task then
          return "";
       elsif Is_Debug_Task (Id) then
          return "";
       else
-         return '(' &  Image (Id) & ") ";
+         return '(' &  To_Wide_String (Image (Id)) & ") ";
       end if;
    end Format;
-
 
    -------------------------------------------------------------------------
    --  I/O utilities
    -------------------------------------------------------------------------
 
-   package Duration_Io is new Ada.Text_Io.Fixed_Io   (Duration);
-   package Any_Int_Io  is new Ada.Text_Io.Integer_Io (Any_Int);
-   package Big_Int_IO  is new Ada.Text_IO.Integer_IO (Big_Int);
+   package Duration_IO is new Ada.Wide_Text_IO.Fixed_IO   (Duration);
+   package Any_Int_IO  is new Ada.Wide_Text_IO.Integer_IO (Any_Int);
+   package Big_Int_IO  is new Ada.Wide_Text_IO.Integer_IO (Big_Int);
 
    ---------------------
    --  Console output --
@@ -702,10 +706,10 @@ package body Tracer is
    --  Outputs to Current_Error, irrespectively of target setting
    --
 
-   procedure Console_Output (Message      : String;
+   procedure Console_Output (Message      : Wide_String;
                              Stay_On_Line : Boolean := False)
    is
-      use Ada.Text_Io;
+      use Ada.Wide_Text_IO;
       Save_Current_Output : constant File_Access := Current_Output;
    begin
       --  Output Debug_Message if we are at the start of a new message
@@ -716,12 +720,12 @@ package body Tracer is
 
       Put (Current_Error, Message);
       if Stay_On_Line then
-         -- There is a bug in the ARM, where Flush is declared with
-         -- an "in out" (rather than "in") parameter. Some compilers
-         -- did implement this bug.  As a consequence, it is not
-         -- possible to write: Flush (Current_Error); Fortunately,
-         -- Flush without parameters operates on Current_Output, so we
-         -- have the following work-around:
+         --  There is a bug in the ARM, where Flush is declared with
+         --  an "in out" (rather than "in") parameter. Some compilers
+         --  did implement this bug.  As a consequence, it is not
+         --  possible to write: Flush (Current_Error); Fortunately,
+         --  Flush without parameters operates on Current_Output, so we
+         --  have the following work-around:
          Set_Output (Current_Error);
          Flush;
          Set_Output (Save_Current_Output.all);
@@ -731,8 +735,8 @@ package body Tracer is
       end if;
    end Console_Output;
 
-   procedure Console_Output (Message : Character) is
-      use Ada.Text_Io;
+   procedure Console_Output (Message : Wide_Character) is
+      use Ada.Wide_Text_IO;
    begin
       --  Output Debug_Message if we are at the start of a new message
       if New_Message then
@@ -753,26 +757,27 @@ package body Tracer is
    --    reading commmands from file
    --
 
-   function Query (Message : String) return Boolean is
-      C : Character;
-      use Ada.Text_Io, Ada.Characters.Handling;
+   function Query (Message : Wide_String) return Boolean is
+      C : Wide_Character;
+      use Ada.Wide_Text_IO, Ada.Wide_Characters.Handling;
    begin
       New_Message := True;  --  Query always terminates current message
       loop
          Console_Output (Message & " ([" & Yes_Char & "]," & No_Char & ") : ",
                          Stay_On_Line => True);
          if Debug_File_Input then
-            Console_Output ( (1 => Yes_Char) ); -- Make it a string to avoid
-                                                -- staying on line
+            Console_Output ((1 => Yes_Char));
+            --  Make it a string to avoid
+            --  staying on line
             return True;
          elsif End_Of_Line (Standard_Input) then
-            Console_Output ( (1 => Yes_Char) ); -- See comment above
+            Console_Output ((1 => Yes_Char)); --  See comment above
             Skip_Line (Standard_Input);
             return True;
          else
             Get (Standard_Input, C);
             C := To_Upper (C);
-            Skip_Line(Standard_Input);
+            Skip_Line (Standard_Input);
 
             case C is
                when No_Char =>
@@ -797,21 +802,22 @@ package body Tracer is
    --  performed.
    --
 
-   procedure Print (Message : String; Source_Id : Task_Id) is
-      use Ada.Text_Io;
+   procedure Print (Message : Wide_String; Source_Id : Task_Id) is
+      use Ada.Wide_Text_IO, Ada.Characters.Handling;
 
-      function Translate (Source : String) return String is
-         -- Translates all control charcters in Source into the "^C" form.
-         -- Why is this function written recursively ? Because it ensures minimum
-         -- overhead if there are no control characters in Source - which is assumed
-         -- to be (by far) the most common case
+      function Translate (Source : Wide_String) return Wide_String is
+         --  Translates all control charcters in Source into the "^C" form.
+         --  Why is this function written recursively ? Because it ensures
+         --  minimum overhead if there are no control characters in
+         --  Source - which is assumed to be (by far) the most common case
       begin
          for Inx in Source'Range loop
             if Source (Inx) < ' ' then
                return
-                 Source (Source'First..Inx-1) &
-                 '^' & Character'Val (Character'Pos (Source (Inx)) + Character'Pos ('@')) &
-                 Translate (Source (Inx+1 .. Source'Last));
+                  Source (Source'First .. Inx - 1) & '^' &
+                  Wide_Character'Val (Wide_Character'Pos (Source (Inx)) +
+                  Wide_Character'Pos ('@')) &
+                  Translate (Source (Inx + 1 .. Source'Last));
             end if;
          end loop;
          return Source;
@@ -821,7 +827,7 @@ package body Tracer is
    begin  --  Print
       if Target /= None then
          Set_Col (Debug_Output.all, 1);
-         -- Outputs a New_Line only if not already in column 1
+         --  Outputs a New_Line only if not already in column 1
 
          if Current_Mode = Mono_Task and then Is_Debug_Task (Source_Id) then
             --  Pretend the task is main task to avoid entering multi-task mode
@@ -835,7 +841,7 @@ package body Tracer is
             if Current_Mode = Mono_Task then
                Put_Line (Debug_Output.all, Trace_Message      &
                                            Multi_Task_Message &
-                                           Image (Main_Task));
+                                           To_Wide_String (Image (Main_Task)));
                Current_Mode := Multi_Task;
             end if;
             Put_Line (Debug_Output.all, Trace_Message & Task_Separator);
@@ -861,13 +867,14 @@ package body Tracer is
    --
 
    function Safe_Open (Name : String) return Boolean is
-      use Ada.Text_Io;
+      use Ada.Wide_Text_IO;
+      use Ada.Characters.Handling;
    begin
       begin  --  Check if file exists
          Open (Trace_File, In_File, Name);
 
          --  No exception, file exists
-         if not Query (Name & Overwrite_Message) then
+         if not Query (To_Wide_String (Name) & Overwrite_Message) then
             return False;
          end if;
          Reset (Trace_File, Out_File);
@@ -898,7 +905,7 @@ package body Tracer is
    type Delayed_Message (Message_Length : Natural) is
    record
       Next    : Message_Access;
-      Content : String (1 .. Message_Length);
+      Content : Wide_String (1 .. Message_Length);
       Id      : Task_Id;
       Pausing : Boolean;
       Lost_Id : Task_Id := Null_Task_Id;
@@ -916,7 +923,9 @@ package body Tracer is
 
    protected Chain is
 
-      procedure Add (Message : String; Caller : Task_Id; With_Pause : Boolean);
+      procedure Add (Message    : Wide_String;
+                     Caller     : Task_Id;
+                     With_Pause : Boolean);
 
       procedure Remove (Message : out Message_Access);
       --  Remove returns null when the chain is empty.
@@ -944,16 +953,17 @@ package body Tracer is
    end Chain;
 
    protected body Chain is
-      procedure Add (Message    : String;
+      procedure Add (Message    : Wide_String;
                      Caller     : Task_Id;
                      With_Pause : Boolean)
       is
          --  The whole Message creation is protected to prevent nasty
          --  interferences, especially if several tasks raised Storage_Error...
          --  Note that new is *not* a potentially blocking operation
-         use Ada.Strings.Fixed;
+         use Ada.Strings.Wide_Fixed;
          Link        : Message_Access;
-         Indentation : constant String := 2*Integer(Task_Info.Get_Level) * ' ';
+         Indentation : constant Wide_String :=
+            2 * Integer (Task_Info.Get_Level) * ' ';
       begin
          Link := new Delayed_Message'
             (Message_Length => Indentation'Length + Message'Length,
@@ -978,7 +988,7 @@ package body Tracer is
                Messages_Lost_Id := Current_Task;
                --  else do nothing since it is not the first lost message
                --  Note that calling Current_Task from a protected
-               -- *procedure* is NOT a bounded error.
+               --  *procedure* is NOT a bounded error.
             end if;
       end Add;
 
@@ -1002,20 +1012,20 @@ package body Tracer is
          return Flush_Active;
       end Already_Flushing;
 
-     function Queue_Length return Big_Counter is
-        Count : Big_Counter := 0;
-        Ptr   : Message_Access := Head;
-     begin
-        while Ptr /= null loop
-           Count := Count + 1;
-           Ptr   := Ptr.Next;
-        end loop;
-        return Count;
+      function Queue_Length return Big_Counter is
+         Count : Big_Counter := 0;
+         Ptr   : Message_Access := Head;
+      begin
+         while Ptr /= null loop
+            Count := Count + 1;
+            Ptr   := Ptr.Next;
+         end loop;
+         return Count;
       end Queue_Length;
    end Chain;
 
    -------------------------------------------------------------------------
-   -- Termination Management
+   --  Termination Management
    -------------------------------------------------------------------------
 
    ----------------
@@ -1024,6 +1034,7 @@ package body Tracer is
 
    package body Last_Will is
       Obj : Proxy;
+      overriding
       procedure Finalize (Object : in out Proxy) is
       begin
          if Current_Mode = Silent then
@@ -1041,7 +1052,9 @@ package body Tracer is
             if Label = "" then
                Trace ("Exception raised during a ""last will"" call: ", Occur);
             else
-               Trace ("Exception raised during ""last will"" call labelled """ & Label & """: ", Occur);
+               Trace (
+                  "Exception raised during ""last will"" call labelled """ &
+                  Label & """: ", Occur);
             end if;
       end Finalize;
    end Last_Will;
@@ -1060,12 +1073,12 @@ package body Tracer is
    --
 
    procedure Finalize_Debug is
-      use Ada.Text_Io;
+      use Ada.Wide_Text_IO;
    begin
-      -- Print outstanding messages
+      --  Print outstanding messages
       Flush_Trace;
 
-      -- Cleanly close files
+      --  Cleanly close files
       if Is_Open (Trace_File) then
          Close (Trace_File);
       end if;
@@ -1078,7 +1091,6 @@ package body Tracer is
          Debug_Error (Occur, "Debug finalization");
    end Finalize_Debug;
 
-
    ----------------------
    -- Execute_Commands --
    ----------------------
@@ -1090,18 +1102,18 @@ package body Tracer is
    procedure Execute_Commands (Current_Message : Message_Access) is
       Selected_Task : Task_Id renames Current_Message.Id;
 
-      Input_Line  : String (1..Input_Length);
+      Input_Line  : Wide_String (1 .. Input_Length);
       Line_Length : Natural;
       Cur_Pos     : Natural;
-      C           : Character;
+      C           : Wide_Character;
 
-      Go_Command_Received    : Boolean := False;
-      Abort_Command_Received : Boolean := False;
-      Ignore_Command_Received: Boolean := False;
+      Go_Command_Received     : Boolean := False;
+      Abort_Command_Received  : Boolean := False;
+      Ignore_Command_Received : Boolean := False;
 
       procedure Display_Help is
       begin
-         for Ch : Character of Help_Message loop
+         for Ch : Wide_Character of Help_Message loop
             if Ch = '\' then
                Console_Output ("", Stay_On_Line => False);
             else
@@ -1116,8 +1128,9 @@ package body Tracer is
                            Blocking_Status);
       procedure Display_Status (To_Display : Status_Kind := All_Status) is
          Remaining : Duration;
-         Buffer    : String (1..Duration'Fore + 1 + 2);
-         use Ada.Strings, Ada.Strings.Fixed, Duration_Io;
+         Buffer    : Wide_String (1 .. Duration'Fore + 1 + 2);
+         use Ada.Characters.Handling, Ada.Strings,
+             Ada.Strings.Wide_Fixed, Duration_IO;
       begin
          case To_Display is
             when All_Status =>
@@ -1130,7 +1143,7 @@ package body Tracer is
                   Console_Output (Aborting_Message);
                end if;
                Console_Output (Queued_Message &
-                               Big_Int'Image (Chain.Queue_Length));
+                               Big_Int'Wide_Image (Chain.Queue_Length));
                Display_Status (Source_Status);
                Display_Status (Target_Status);
                Display_Status (Go_Status);
@@ -1140,7 +1153,8 @@ package body Tracer is
                if Is_Debug_Task (Selected_Task) then
                   Console_Output (Unmarkable_Message);
                else
-                  Console_Output (Seltask_Message & Image (Selected_Task) &
+                  Console_Output (Seltask_Message &
+                                  To_Wide_String (Image (Selected_Task)) &
                                   " (",
                                   Stay_On_Line => True);
                   if Task_Info.Is_Marked (Selected_Task) then
@@ -1186,7 +1200,7 @@ package body Tracer is
                      Console_Output (Step_Message);
                   when others =>
                      Console_Output (N_Message_1                     &
-                                     Big_Counter'Image (Previous_Go) &
+                                     Big_Counter'Wide_Image (Previous_Go) &
                                      N_Message_2);
                end case;
 
@@ -1197,7 +1211,9 @@ package body Tracer is
                   Console_Output (Infinite_Message);
                else
                   Put (Buffer, Remaining, Aft => 2);
-                  Console_Output (Trim(Buffer, Left), Stay_On_Line => True);
+                  Console_Output (Trim (Buffer,
+                                        Ada.Strings.Left),
+                                        Stay_On_Line => True);
                   Console_Output (Seconds_Message);
                end if;
             when Blocking_Status =>
@@ -1210,28 +1226,30 @@ package body Tracer is
          end case;
       end Display_Status;
 
-      procedure Syntax_Error (Reason : String) is
-         use Ada.Strings.Fixed;
+      procedure Syntax_Error (Reason : Wide_String) is
+         use Ada.Strings.Wide_Fixed;
       begin
-         Console_Output (Syntax_Message & Input_Line (1..Line_Length));
-         Console_Output ((Syntax_Message'Length + Cur_Pos - 1)*' ' & "^ "
+         Console_Output (Syntax_Message & Input_Line (1 .. Line_Length));
+         Console_Output ((Syntax_Message'Length + Cur_Pos - 1) * ' ' & "^ "
                          & Reason);
-         Go_Command_Received    := False;
-         Abort_Command_Received := False;
-         Ignore_Command_Received:= False;
+         Go_Command_Received     := False;
+         Abort_Command_Received  := False;
+         Ignore_Command_Received := False;
       end Syntax_Error;
 
-
       use Ada.Characters.Handling;
-      use Ada.Text_Io, Big_Int_Io;
-   begin  --  Execute_Commands
-      Suspend_Timer;   -- Ignored if Timer is not active
 
-   Over_Messages :
-      while not Go_Command_Received loop    --  Over messages
+      HT : constant Wide_Character := To_Wide_Character (ASCII.HT);
+
+      use Ada.Wide_Characters.Handling;
+      use Ada.Wide_Text_IO, Big_Int_IO;
+   begin  --  Execute_Commands
+      Suspend_Timer;   --  Ignored if Timer is not active
+
+      Over_Messages : while not Go_Command_Received loop    --  Over messages
          if Debug_File_Input then
-            -- Read from file before printing the "pause" message to
-            -- get the "end" message at the right place
+            --  Read from file before printing the "pause" message to
+            --  get the "end" message at the right place
             begin
                loop
                   Get_Line (Input_File, Input_Line, Last => Line_Length);
@@ -1250,8 +1268,8 @@ package body Tracer is
          New_Message := True;  --  An input always terminates current message
 
          if Debug_File_Input then
-            -- Echo the command line
-            Console_Output (Input_Line (1..Line_Length));
+            --  Echo the command line
+            Console_Output (Input_Line (1 .. Line_Length));
          else
             Get_Line (Standard_Input, Input_Line, Last => Line_Length);
          end if;
@@ -1259,34 +1277,36 @@ package body Tracer is
 
          Cur_Pos := 0;
 
-      Over_Tags : --  Loop over tags in message
-         while Cur_Pos < Line_Length loop
+         --  Loop over tags in message
+         Over_Tags : while Cur_Pos < Line_Length loop
             Cur_Pos := Cur_Pos + 1;
             --  Skip separators
-            while Input_Line (Cur_Pos) = ' '      or
-            Input_Line (Cur_Pos) = Ascii.Ht or
-            Input_Line (Cur_Pos) = ','
+            while
+               Input_Line (Cur_Pos) = ' ' or else
+               Input_Line (Cur_Pos) = HT or else
+               Input_Line (Cur_Pos) = ','
             loop
                exit Over_Tags when Cur_Pos = Line_Length;
                Cur_Pos := Cur_Pos + 1;
             end loop;
 
-            C := To_Upper (Input_Line(Cur_Pos));
+            C := To_Upper (Input_Line (Cur_Pos));
             case C is
 
                --  "Go" commands
                when Go_Char =>
                   if Cur_Pos < Line_Length and then
-                    Input_Line (Cur_Pos+1) in '0'..'9'
+                    Input_Line (Cur_Pos + 1) in '0' .. '9'
                   then
                      declare
                         Last : Natural;
                      begin
                         Cur_Pos := Cur_Pos + 1;
-                        -- To get a better placement of the error
-                        -- message if the value is wrong
+                        --  To get a better placement of the error
+                        --  message if the value is wrong
 
-                        Get (Input_Line (Cur_Pos..Line_Length), Previous_Go,
+                        Get (Input_Line (Cur_Pos .. Line_Length),
+                             Previous_Go,
                              Last);
                         Cur_Pos := Last;
                         exception
@@ -1349,19 +1369,19 @@ package body Tracer is
                --  Timer
                when Delay_Char =>
                   declare
-                     use Duration_Io;
+                     use Duration_IO;
                      Last  : Natural;
                      Value : Duration := Off;
                   begin
                      if Cur_Pos < Line_Length and then
-                       (Input_Line (Cur_Pos+1) in '0'..'9' or
-                        Input_Line (Cur_Pos+1) = '.')
+                       (Input_Line (Cur_Pos + 1) in '0' .. '9' or else
+                        Input_Line (Cur_Pos + 1) = '.')
                      then
                         Cur_Pos := Cur_Pos + 1;
-                        -- To get a better placement of the error
-                        -- message if the value is wrong
+                        --  To get a better placement of the error
+                        --  message if the value is wrong
 
-                        Get (Input_Line (Cur_Pos..Line_Length), Value, Last);
+                        Get (Input_Line (Cur_Pos .. Line_Length), Value, Last);
                         Cur_Pos := Last;
                      end if;
                      Set_Timer (Value);
@@ -1390,7 +1410,7 @@ package body Tracer is
                --  Quit and others
                when Quit_Char =>
                   if Aborting_Main then
-                     -- Let's not beat this dead horse...
+                     --  Let's not beat this dead horse...
                      Console_Output (Aborting_Message);
                      Go_Command_Received := True;
                   else
@@ -1425,7 +1445,6 @@ package body Tracer is
       when Occur : others =>
          Debug_Error (Occur, "Execute_Commands");
    end Execute_Commands;
-
 
    -------------------------------------------------------------------------
    --  "Unprotected" subprograms
@@ -1466,7 +1485,7 @@ package body Tracer is
 
          Print (Current_Message.Content, Current_Message.Id);
 
-         if Current_Message.Pausing or Dont_Wait_Count = 1 then
+         if Current_Message.Pausing or else Dont_Wait_Count = 1 then
             Execute_Commands (Current_Message);
             --  The "go" command will reinitialize Dont_Wait_Count.
          elsif Dont_Wait_Count >= 1 then
@@ -1478,8 +1497,8 @@ package body Tracer is
 
       Chain.Load_And_Reset (Messages_Lost_Id);
       if Messages_Lost_Id /= Null_Task_Id  then
-         -- This is the case when messages were lost after the last
-         -- message in the chain
+         --  This is the case when messages were lost after the last
+         --  message in the chain
          Print (Lost_Message, Messages_Lost_Id);
       end if;
    exception         --  Safety exception handler
@@ -1499,7 +1518,7 @@ package body Tracer is
       new Protection.Generic_Protected_Call (Trace_Target);
 
    procedure Unprotected_Set_Target (To : Trace_Target) is
-      use Ada.Text_Io;
+      use Ada.Wide_Text_IO;
    begin
       case To is
          when File =>
@@ -1549,7 +1568,7 @@ package body Tracer is
    -- "+" --
    ---------
 
-   function "+" (Item : String) return Tracer_String_Access is
+   function "+" (Item : Wide_String) return Tracer_String_Access is
    begin
       return new Tracer_String'(Tracer_String (Item));
    end "+";
@@ -1558,7 +1577,7 @@ package body Tracer is
    -- Pause --
    -----------
 
-   procedure Pause (Message : String) is
+   procedure Pause (Message : Wide_String) is
       use Protection;
    begin
       if Not_Traced (Current_Task) then
@@ -1568,12 +1587,14 @@ package body Tracer is
       if Message = "" then
          Chain.Add (Pause_Message, Current_Task, With_Pause => True);
       else
-         Chain.Add (Pause_Message & " (" & Message & ')', Current_Task, With_Pause => True);
+         Chain.Add (Pause_Message & " (" & Message & ')',
+                    Current_Task,
+                    With_Pause => True);
       end if;
 
       Protected_Call (Unprotected_Flush'Access, Exclusion'Access);
-      -- We do not simply call Flush_Trace here because we do want to
-      -- block even if another task is currently flushing.
+      --  We do not simply call Flush_Trace here because we do want to
+      --  block even if another task is currently flushing.
    exception
       when Occur : others =>
          Debug_Error (Occur, "Pause");
@@ -1626,7 +1647,7 @@ package body Tracer is
    -- Trace --
    -----------
 
-   procedure Trace (Message : String) is
+   procedure Trace (Message : Wide_String) is
    begin
       Keep_Trace (Message);
       Flush_Trace;
@@ -1636,7 +1657,7 @@ package body Tracer is
    -- Keep_Trace --
    ----------------
 
-   procedure Keep_Trace (Message : String;
+   procedure Keep_Trace (Message : Wide_String;
                          Caller  : Task_Id := Current_Task)
    is
    begin
@@ -1652,7 +1673,7 @@ package body Tracer is
    -----------
 
    procedure Trace (Flag    : Trace_Flag;
-                    Message : String)
+                    Message : Wide_String)
    is
    begin
       Keep_Trace (Flag, Message);
@@ -1664,8 +1685,8 @@ package body Tracer is
    ----------------
 
    procedure Keep_Trace (Flag    : Trace_Flag;
-                         Message : String;
-                         Caller  : Ati.Task_Id := Ati.Current_Task)
+                         Message : Wide_String;
+                         Caller  : ATI.Task_Id := ATI.Current_Task)
    is
       Traced : Boolean;
    begin
@@ -1701,19 +1722,21 @@ package body Tracer is
    -- Initialize --
    ----------------
 
+   overriding
    procedure Initialize (Object : in out Auto_Tracer) is
    begin
-      Trace (Start, String (Object.Message.all));
+      Trace (Start, Wide_String (Object.Message.all));
    end Initialize;
 
    --------------
    -- Finalize --
    --------------
 
+   overriding
    procedure Finalize (Object : in out Auto_Tracer) is
       Junk : Tracer_String_Access := Object.Message;
    begin
-      Trace (Stop, String (Object.Message.all));
+      Trace (Stop, Wide_String (Object.Message.all));
       Free (Junk);
    end Finalize;
 
@@ -1721,7 +1744,7 @@ package body Tracer is
    -- Trace --
    -----------
 
-   procedure Trace (Message : String;
+   procedure Trace (Message : Wide_String;
                     Value   : Boolean)
    is
    begin
@@ -1733,23 +1756,23 @@ package body Tracer is
    -- Keep_Trace --
    ----------------
 
-   procedure Keep_Trace (Message : String;
+   procedure Keep_Trace (Message : Wide_String;
                          Value   : Boolean;
-                         Caller  : Ati.Task_Id := Ati.Current_Task)
+                         Caller  : ATI.Task_Id := ATI.Current_Task)
    is
    begin
       if Not_Traced (Caller) then
          return;
       end if;
 
-      Keep_Trace (Message & ' ' & Boolean'Image (Value));
+      Keep_Trace (Message & ' ' & Boolean'Wide_Image (Value));
    end Keep_Trace;
 
    -----------
    -- Trace --
    -----------
 
-   procedure Trace (Message : String;
+   procedure Trace (Message : Wide_String;
                     Value   : Any_Int)
    is
    begin
@@ -1761,26 +1784,26 @@ package body Tracer is
    -- Keep_Trace --
    ----------------
 
-   procedure Keep_Trace (Message : String;
+   procedure Keep_Trace (Message : Wide_String;
                          Value   : Any_Int;
-                         Caller  : Ati.Task_Id := Ati.Current_Task)
+                         Caller  : ATI.Task_Id := ATI.Current_Task)
    is
-      use Any_Int_Io, Ada.Strings, Ada.Strings.Fixed;
-      The_Image : String (1 .. Any_Int'Width);
+      use Any_Int_IO, Ada.Strings.Wide_Fixed;
+      The_Image : Wide_String (1 .. Any_Int'Width);
    begin
       if Not_Traced (Caller) then
          return;
       end if;
 
       Put (The_Image, Value);
-      Keep_Trace (Message & ' ' & Trim (The_Image, Left), Caller);
+      Keep_Trace (Message & ' ' & Trim (The_Image, Ada.Strings.Left), Caller);
    end Keep_Trace;
 
    -----------
    -- Trace --
    -----------
 
-   procedure Trace (Message : String;
+   procedure Trace (Message : Wide_String;
                     Value   : Any_Float)
    is
    begin
@@ -1792,29 +1815,29 @@ package body Tracer is
    -- Keep_Trace --
    ----------------
 
-   procedure Keep_Trace (Message : String;
+   procedure Keep_Trace (Message : Wide_String;
                          Value   : Any_Float;
-                         Caller  : Ati.Task_Id := Ati.Current_Task)
+                         Caller  : ATI.Task_Id := ATI.Current_Task)
    is
-      package Any_Float_Io is new Ada.Text_Io.Float_Io   (Any_Float);
+      package Any_Float_IO is new Ada.Wide_Text_IO.Float_IO (Any_Float);
 
-   use Any_Float_Io, Ada.Strings, Ada.Strings.Fixed;
-      The_Image : String (1 .. Any_Float'Width);
+      use Any_Float_IO, Ada.Strings.Wide_Fixed;
+      The_Image : Wide_String (1 .. Any_Float'Width);
    begin
       if Not_Traced (Caller) then
          return;
       end if;
 
       Put (The_Image, Value);
-      Keep_Trace (Message & ' ' & Trim (The_Image, Left), Caller);
+      Keep_Trace (Message & ' ' & Trim (The_Image, Ada.Strings.Left), Caller);
    end Keep_Trace;
 
    -----------
    -- Trace --
    -----------
 
-   procedure Trace (Message          : String;
-                    Raised_Exception : Ada.Exceptions.Exception_Occurrence)
+   procedure Trace (Message          : Wide_String;
+                    Raised_Exception : AE.Exception_Occurrence)
    is
    begin
       Keep_Trace (Message, Raised_Exception);
@@ -1826,25 +1849,26 @@ package body Tracer is
    ----------------
 
    procedure Keep_Trace
-     (Message          : String;
+     (Message          : Wide_String;
       Raised_Exception : Ada.Exceptions.Exception_Occurrence;
-      Caller           : Ati.Task_Id := Ati.Current_Task)
+      Caller           : ATI.Task_Id := ATI.Current_Task)
    is
       use Ada.Exceptions;
+      use Ada.Characters.Handling;
    begin
       if Not_Traced (Caller) then
          return;
       end if;
 
-      Keep_Trace (Message & ' ' & Exception_Name (Raised_Exception),
-                  Caller);
+      Keep_Trace (Message & ' ' &
+         To_Wide_String (Exception_Name (Raised_Exception)), Caller);
    end Keep_Trace;
 
    -----------
    -- Trace --
    -----------
 
-   procedure Trace (Message : String; Value  : Ada.Tags.Tag) is
+   procedure Trace (Message : Wide_String; Value  : Ada.Tags.Tag) is
    begin
       Keep_Trace (Message, Value);
       Flush_Trace;
@@ -1854,29 +1878,32 @@ package body Tracer is
    -- Keep_Trace --
    ----------------
 
-   procedure Keep_Trace (Message : String;
+   procedure Keep_Trace (Message : Wide_String;
                          Value  : Ada.Tags.Tag;
                          Caller : ATI.Task_Id  := ATI.Current_Task)
    is
       use Ada.Tags;
+      use Ada.Characters.Handling;
    begin
       if Not_Traced (Caller) then
          return;
       end if;
 
-      Keep_Trace (Message & ' ' & Expanded_Name (Value),
+      Keep_Trace (Message & ' ' & To_Wide_String (Expanded_Name (Value)),
                   Caller);
    end Keep_Trace;
 
    --
-   -- Stream related declarations
+   --  Stream related declarations
    --
 
-   -- Number of hex digits in a Stream_Element:
+   --  Number of hex digits in a Stream_Element:
    Hex_Digits : constant := (Ada.Streams.Stream_Element'Size + 3) / 4;
-   Hex_Table  : constant array (Ada.Streams.Stream_Element range 0..15) of Character
-     := "0123456789ABCDEF";
+   Hex_Table  :
+      constant array (Ada.Streams.Stream_Element range 0 .. 15)
+      of Wide_Character := "0123456789ABCDEF";
 
+   overriding
    procedure Read (Stream : in out Trace_Stream_Type;
                    Item   :    out Ada.Streams.Stream_Element_Array;
                    Last   :    out Ada.Streams.Stream_Element_Offset)
@@ -1885,32 +1912,40 @@ package body Tracer is
       raise Program_Error;
    end Read;
 
+   overriding
    procedure Write (Stream : in out Trace_Stream_Type;
-                    Item   : in     Ada.Streams.Stream_Element_Array)
+                    Item   :        Ada.Streams.Stream_Element_Array)
    is
       use Ada.Streams;
-      Message_H : String (1 .. (Hex_Digits+1)*Item'Length - 1) := (others => ' '); -- Hex string
-      Message_A : String (1 .. Item'Length)                    := (others => ' '); -- Ascii string
+      use Ada.Characters.Handling;
+
+      Message_Hex : Wide_String
+         (1 .. (Hex_Digits + 1) * Item'Length - 1) := (others => ' ');
+      Message_Ascii : Wide_String (1 .. Item'Length) := (others => ' ');
 
       procedure Decode (Inx : Stream_Element_Offset) is
          Value : Stream_Element := Item (Inx);
       begin
-         for I in Integer range 1..Hex_Digits loop
-            Message_H (Integer (Inx) * (Hex_Digits + 1) - I) := Hex_Table (Value mod 16);
+         for I in Integer range 1 .. Hex_Digits loop
+            Message_Hex (Integer (Inx) * (Hex_Digits + 1) - I) :=
+               Hex_Table (Value mod 16);
             Value := Value / 16;
          end loop;
 
-         if Item (Inx) < Character'Pos (' ') or Item (Inx) = Character'Pos (Ascii.Del) then
-            Message_A (Integer (Inx)) := '.';
+         if
+            Item (Inx) < Wide_Character'Pos (' ') or else
+            Item (Inx) = Wide_Character'Pos (To_Wide_Character (ASCII.DEL))
+         then
+            Message_Ascii (Integer (Inx)) := '.';
          else
-            Message_A (Integer (Inx)) := Character'Val (Item (Inx));
+            Message_Ascii (Integer (Inx)) := Wide_Character'Val (Item (Inx));
          end if;
       end Decode;
    begin  -- Write
       for I in Item'Range loop
          Decode (I);
       end loop;
-      Trace (Message_H & " => " & Message_A);
+      Trace (Message_Hex & " => " & Message_Ascii);
    end Write;
 
    --
@@ -1933,18 +1968,16 @@ package body Tracer is
       end Get_Next_Count;
    end Counters;
 
-   function Tracer_Count (Counter : Tracer_Counter) return String is
+   function Tracer_Count (Counter : Tracer_Counter) return Wide_String is
       I : Natural;
    begin
       Counters.Get_Next_Count (Counter, I);
-      return Natural'Image (I);
+      return Natural'Wide_Image (I);
    end Tracer_Count;
-
 
    --
    --  Set and retrieve source and target
    --
-
 
    ----------------
    -- Set_Source --
@@ -2006,7 +2039,7 @@ package body Tracer is
    -- Mark --
    ----------
 
-   procedure Mark (Target_Task : Ati.Task_Id := Ati.Current_Task) is
+   procedure Mark (Target_Task : ATI.Task_Id := ATI.Current_Task) is
    begin
       if Current_Mode = Silent then
          return;
@@ -2019,7 +2052,7 @@ package body Tracer is
    -- Unmark --
    ------------
 
-   procedure Unmark (Target_Task : Ati.Task_Id := Ati.Current_Task) is
+   procedure Unmark (Target_Task : ATI.Task_Id := ATI.Current_Task) is
    begin
       if Current_Mode = Silent then
          return;
@@ -2032,7 +2065,7 @@ package body Tracer is
    -- Is_Marked --
    ---------------
 
-   function Is_Marked (Target_Task : Ati.Task_Id := Ati.Current_Task)
+   function Is_Marked (Target_Task : ATI.Task_Id := ATI.Current_Task)
          return Boolean
    is
    begin
@@ -2141,7 +2174,6 @@ package body Tracer is
          return Off;         --  The best we can return...
    end Remaining_Time;
 
-
    -------------------------------------------------------------------------
    --  Initialization code for debug services
    -------------------------------------------------------------------------
@@ -2151,7 +2183,7 @@ package body Tracer is
 begin  -- Tracer
 
    declare  -- Check TRACE.INI file
-      use Ada.Text_Io;
+      use Ada.Wide_Text_IO;
    begin
       Open (Input_File, In_File, Initial_File_Name);
       Debug_File_Input := True;
